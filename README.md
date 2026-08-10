@@ -27,17 +27,28 @@ Or as a one-liner:
 createdb -U postgres filmexa_db
 ```
 
-The default connection settings (in `src/main/resources/application.properties`) are:
+## 2. Create the `.env` file
 
-| Property   | Value                                          |
-| ---------- | ---------------------------------------------- |
-| URL        | `jdbc:postgresql://localhost:5432/filmexa_db`  |
-| Username   | `postgres`                                     |
-| Password   | `postgres`                                      |
+The app reads its configuration from a `.env` file in the root directory (`backend/.env`) via Spring's `spring.config.import`. This file is **git-ignored**, so you must create it yourself — it is never committed.
 
-If your PostgreSQL credentials differ, update these values in `application.properties`.
+Create a `.env` file in the root directory and add the required environment variables:
 
-## 2. Run the project
+```properties
+SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/DB_NAME
+SPRING_DATASOURCE_USERNAME=POSTGRES_USER
+SPRING_DATASOURCE_PASSWORD=POSTGRES_PASSWORD
+
+SPRING_SECURITY_USER_NAME=USERNAME
+SPRING_SECURITY_USER_PASSWORD=PASSWORD
+```
+
+Replace the placeholders with your own values:
+
+- `DB_NAME` — the database you created in step 1 (e.g. `filmexa_db`)
+- `POSTGRES_USER` / `POSTGRES_PASSWORD` — your PostgreSQL credentials
+- `USERNAME` / `PASSWORD` — the HTTP Basic auth login used to access the API
+
+## 3. Run the project
 
 From the `backend/` directory:
 
@@ -55,7 +66,7 @@ The server starts on **http://localhost:8080** (override with the `PORT` environ
 ./mvnw test              # Run the tests
 ```
 
-## 3. Access the API
+## 4. Access the API
 
 The app uses **HTTP Basic authentication**. The default in-memory user is:
 
