@@ -6,11 +6,11 @@
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/08 18:44:54 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/08/08 18:44:58 by kchaouki         ###   ########.fr       */
+/*   Updated: 2026/08/11 16:31:30 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-package com.filmexa.stream.enums;
+package com.filmexa.stream.modules.users.enums;
 
 public enum Role {
     USER,

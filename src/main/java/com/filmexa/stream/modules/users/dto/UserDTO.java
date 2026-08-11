@@ -1,25 +1,24 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   AuthProvider.java                                  :+:      :+:    :+:   */
+/*   UserDTO.java                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/08/10 16:28:54 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/08/10 16:31:05 by kchaouki         ###   ########.fr       */
+/*   Created: 2026/08/08 18:41:44 by kchaouki          #+#    #+#             */
+/*   Updated: 2026/08/11 15:28:57 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-package com.filmexa.stream.enums;
+package com.filmexa.stream.modules.users.dto;
 
-public enum AuthProvider {
-    LOCAL("Local"),
-    GOOGLE("Google"),
-    INTRA("Intra 42");
+import lombok.Data;
 
-    private final String displayName;
+@Data
+public class UserDTO {
 
-    AuthProvider(String displayName) {
-        this.displayName = displayName;
-    }
+    private String username;
+    private String firstName;
+    private String lastName;
+    private String role;
 }

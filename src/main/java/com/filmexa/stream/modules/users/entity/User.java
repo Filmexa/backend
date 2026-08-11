@@ -6,18 +6,26 @@
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/08 18:09:41 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/08/10 16:34:01 by kchaouki         ###   ########.fr       */
+/*   Updated: 2026/08/11 16:36:44 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-package com.filmexa.stream.entities;
+package com.filmexa.stream.modules.users.entity;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.List;
+
+import org.jspecify.annotations.Nullable;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.filmexa.stream.enums.AuthProvider;
-import com.filmexa.stream.enums.PreferredLanguage;
-import com.filmexa.stream.enums.Role;
+import com.filmexa.stream.common.utils.AbstractEntity;
+import com.filmexa.stream.modules.users.enums.AuthProvider;
+import com.filmexa.stream.modules.users.enums.PreferredLanguage;
+import com.filmexa.stream.modules.users.enums.Role;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -29,7 +37,7 @@ import lombok.Data;
 @Data
 @Entity
 @Table(name = "users")
-public class User extends AbstractEntity {
+public class User extends AbstractEntity implements UserDetails {
 
     @Column(unique = true)
     private String username;
@@ -81,4 +89,15 @@ public class User extends AbstractEntity {
 
     @Column(nullable = false)
     private LocalDateTime updatedAt;
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return List.of(new SimpleGrantedAuthority(role.name()));
+    }
+
+    @Override
+    public @Nullable String getPassword() {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'getPassword'");
+    }
 }
