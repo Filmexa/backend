@@ -6,17 +6,17 @@
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/08 18:24:35 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/08/08 19:38:56 by kchaouki         ###   ########.fr       */
+/*   Updated: 2026/08/11 16:30:46 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-package com.filmexa.stream.controllers;
+package com.filmexa.stream.modules.users.controller;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.filmexa.stream.services.UserService;
+import com.filmexa.stream.modules.users.service.UserService;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;

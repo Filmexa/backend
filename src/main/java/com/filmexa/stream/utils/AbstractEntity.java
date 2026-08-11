@@ -6,11 +6,11 @@
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/08 18:10:34 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/08/08 18:20:24 by kchaouki         ###   ########.fr       */
+/*   Updated: 2026/08/11 16:34:19 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-package com.filmexa.stream.entities;
+package com.filmexa.stream.utils;
 
 import java.util.UUID;
 

@@ -1,21 +1,25 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   UserService.java                                   :+:      :+:    :+:   */
+/*   PreferredLanguage.java                             :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/08/08 18:23:06 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/08/08 18:23:07 by kchaouki         ###   ########.fr       */
+/*   Created: 2026/08/10 16:27:34 by kchaouki          #+#    #+#             */
+/*   Updated: 2026/08/11 16:31:26 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-package com.filmexa.stream.services;
+package com.filmexa.stream.modules.users.enums;
 
-import org.springframework.stereotype.Service;
+public enum PreferredLanguage {
+    ENGLISH("EN"),
+    FRENCH("FR"),
+    ARABIC("AR");
 
-@Service
-public interface UserService {
+    private final String displayName;
 
-    public String getUserGreeting(String username);
+    PreferredLanguage(String displayName) {
+        this.displayName = displayName;
+    }
 }
