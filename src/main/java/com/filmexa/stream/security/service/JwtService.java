@@ -6,7 +6,7 @@
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/10 15:21:56 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/08/14 20:49:33 by kchaouki         ###   ########.fr       */
+/*   Updated: 2026/08/14 21:33:51 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -114,7 +114,9 @@ public class JwtService {
 
     public boolean isTokenValid(String token, UserDetails userDetails) {
         final String username = extractUsername(token);
-        return (username.equals(userDetails.getUsername())) && !isTokenExpired(token);
+        return (username.equals(userDetails.getUsername()))
+                && !isTokenExpired(token)
+                && !isRefreshToken(token);
     }
 
     private boolean isTokenExpired(String token) {

@@ -6,7 +6,7 @@
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/08 18:34:10 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/08/14 21:26:05 by kchaouki         ###   ########.fr       */
+/*   Updated: 2026/08/14 21:33:20 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -54,7 +54,8 @@ public class SecurityConfig {
 	public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 		http.authorizeHttpRequests(auth -> auth
 						.requestMatchers(SWAGGER_WHITELIST).permitAll()
-						.anyRequest().permitAll())
+						.requestMatchers("/api/auth/**").permitAll()
+						.anyRequest().authenticated())
 				.csrf(csrf -> csrf.disable())
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.authenticationProvider(authenticationProvider())
