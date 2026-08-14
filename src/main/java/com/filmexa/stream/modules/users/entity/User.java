@@ -6,7 +6,7 @@
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/08 18:09:41 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/08/11 16:36:44 by kchaouki         ###   ########.fr       */
+/*   Updated: 2026/08/14 19:15:45 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -97,7 +97,11 @@ public class User extends AbstractEntity implements UserDetails {
 
     @Override
     public @Nullable String getPassword() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getPassword'");
+        return hashedPassword;
+    }
+
+    @Override
+    public @Nullable String getUsername() {
+        return username;
     }
 }
