@@ -6,7 +6,7 @@
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/10 16:28:54 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/08/11 16:31:21 by kchaouki         ###   ########.fr       */
+/*   Updated: 2026/08/14 22:28:08 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,5 +21,9 @@ public enum AuthProvider {
 
     AuthProvider(String displayName) {
         this.displayName = displayName;
+    }
+
+    public String getDisplayName() {
+        return displayName;
     }
 }

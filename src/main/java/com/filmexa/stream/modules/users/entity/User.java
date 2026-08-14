@@ -6,7 +6,7 @@
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/08 18:09:41 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/08/14 19:15:45 by kchaouki         ###   ########.fr       */
+/*   Updated: 2026/08/14 22:07:40 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -70,6 +70,12 @@ public class User extends AbstractEntity implements UserDetails {
 
     @Column
     private LocalDateTime emailVerificationCodeExpiresAt;
+
+    @Column
+    private String passwordResetCode;
+
+    @Column
+    private LocalDateTime passwordResetCodeExpiresAt;
 
     @Column(columnDefinition = "TEXT")
     private String bio;
