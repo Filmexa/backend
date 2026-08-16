@@ -6,7 +6,7 @@
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/08 18:23:06 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/08/16 14:41:52 by kchaouki         ###   ########.fr       */
+/*   Updated: 2026/08/16 15:22:52 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,7 +31,11 @@ public interface UserService {
 
     public boolean verifyEmail(String email, String code);
 
+    public void resendVerificationCode(String email);
+
     public void requestPasswordReset(String email);
+
+    public void resendPasswordResetCode(String email);
 
     public boolean resetPassword(ResetPasswordRequest request);
 

@@ -6,7 +6,7 @@
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/14 15:44:40 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/08/16 15:06:52 by kchaouki         ###   ########.fr       */
+/*   Updated: 2026/08/16 15:25:10 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -91,7 +91,7 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
+    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request) {
         try {
             userService.registerUser(request);
             return ResponseEntity.status(HttpStatus.CREATED)
@@ -110,12 +110,22 @@ public class AuthController {
         return ResponseEntity.ok("Account verified successfully");
     }
 
-    // resend-verification
+    @PostMapping("/resend-verification")
+    public ResponseEntity<?> resendVerification(@Valid @RequestBody ForgotPasswordRequest request) {
+        userService.resendVerificationCode(request.getEmail());
+        return ResponseEntity.ok("If an account with that email exists and is not verified, a new verification code has been sent.");
+    }
 
     @PostMapping("/forgot-password")
     public ResponseEntity<?> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
         userService.requestPasswordReset(request.getEmail());
         return ResponseEntity.ok("If an account with that email exists, a password reset code has been sent.");
+    }
+
+    @PostMapping("/resend-password-reset")
+    public ResponseEntity<?> resendPasswordReset(@Valid @RequestBody ForgotPasswordRequest request) {
+        userService.resendPasswordResetCode(request.getEmail());
+        return ResponseEntity.ok("If an account with that email exists, a new password reset code has been sent.");
     }
 
     @PostMapping("/reset-password")
