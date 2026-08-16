@@ -6,13 +6,14 @@
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/08 18:23:06 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/08/16 17:03:36 by kchaouki         ###   ########.fr       */
+/*   Updated: 2026/08/16 18:32:26 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 package com.filmexa.stream.modules.users.service;
 
 import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 
@@ -24,7 +25,7 @@ import com.filmexa.stream.modules.users.enums.PreferredLanguage;
 @Service
 public interface UserService {
 
-    public String getUserGreeting(String username);
+    public Optional<User> findById(UUID userId);
 
     public Optional<User> findByUsername(String username);
 
