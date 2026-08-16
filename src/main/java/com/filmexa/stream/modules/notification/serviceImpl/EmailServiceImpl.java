@@ -6,7 +6,7 @@
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/14 21:59:31 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/08/15 12:13:02 by kchaouki         ###   ########.fr       */
+/*   Updated: 2026/08/16 17:02:11 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -47,7 +47,7 @@ public class EmailServiceImpl implements NotificationService {
             case ARABIC -> "تحقق من حساب Filmexa الخاص بك";
             default -> "Verify your Filmexa account";
         };
-        send(user, "mail/verification-" + user.getPreferredLanguage().getDisplayName(), subject, code, expirationMinutes);
+        send(user, user.getEmail(), "mail/verification-" + user.getPreferredLanguage().getDisplayName(), subject, code, expirationMinutes);
     }
 
     @Override
@@ -58,10 +58,21 @@ public class EmailServiceImpl implements NotificationService {
             case "ar" -> "إعادة تعيين كلمة مرور Filmexa";
             default -> "Reset your Filmexa password";
         };
-        send(user, "mail/password-reset-" + lang, subject, code, expirationMinutes);
+        send(user, user.getEmail(), "mail/password-reset-" + lang, subject, code, expirationMinutes);
     }
 
-    private void send(User user, String template, String subject, String code, long expirationMinutes) {
+    @Override
+    public void sendEmailChangeCode(User user, String newEmail, String code, long expirationMinutes) {
+        String lang = languageCode(user.getPreferredLanguage());
+        String subject = switch (lang) {
+            case "fr" -> "Confirmez votre nouvelle adresse e-mail Filmexa";
+            case "ar" -> "تأكيد بريدك الإلكتروني الجديد في Filmexa";
+            default -> "Confirm your new Filmexa email address";
+        };
+        send(user, newEmail, "mail/email-change-" + lang, subject, code, expirationMinutes);
+    }
+
+    private void send(User user, String to, String template, String subject, String code, long expirationMinutes) {
         Context context = new Context();
         context.setVariable("username", user.getUsername());
         context.setVariable("code", code);
@@ -73,12 +84,12 @@ public class EmailServiceImpl implements NotificationService {
             MimeMessage mimeMessage = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, "UTF-8");
             helper.setFrom(fromAddress);
-            helper.setTo(user.getEmail());
+            helper.setTo(to);
             helper.setSubject(subject);
             helper.setText(html, true);
             mailSender.send(mimeMessage);
         } catch (MessagingException e) {
-            throw new IllegalStateException("Failed to send email to " + user.getEmail(), e);
+            throw new IllegalStateException("Failed to send email to " + to, e);
         }
     }
 

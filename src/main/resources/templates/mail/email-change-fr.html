@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <title>Confirmez votre nouvelle adresse e-mail Filmexa</title>
+</head>
+<body style="margin:0; padding:0; background-color:#0f0f10; font-family:Arial, Helvetica, sans-serif;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#0f0f10; padding:32px 0;">
+        <tr>
+            <td align="center">
+                <table role="presentation" width="480" cellpadding="0" cellspacing="0" style="background-color:#1a1a1c; border-radius:12px; overflow:hidden;">
+                    <tr>
+                        <td style="padding:32px 40px 8px 40px;">
+                            <h1 style="margin:0; font-size:22px; color:#ffffff;">Filmexa</h1>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding:16px 40px 0 40px;">
+                            <p style="margin:0 0 16px 0; font-size:16px; color:#e5e5e5;">
+                                Bonjour <span th:text="${username}">là</span>,
+                            </p>
+                            <p style="margin:0 0 24px 0; font-size:15px; line-height:1.6; color:#b3b3b3;">
+                                Utilisez le code ci-dessous pour confirmer votre nouvelle adresse e-mail Filmexa. Ce code expire dans
+                                <span th:text="${expirationMinutes}">15</span> minutes.
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="center" style="padding:0 40px 24px 40px;">
+                            <div style="display:inline-block; padding:16px 32px; background-color:#e50914; border-radius:8px;">
+                                <span th:text="${code}" style="font-size:28px; font-weight:bold; letter-spacing:6px; color:#ffffff;">000000</span>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding:0 40px 32px 40px;">
+                            <p style="margin:0; font-size:13px; line-height:1.5; color:#7a7a7a;">
+                                Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet e-mail en toute sécurité — votre adresse e-mail Filmexa ne sera pas modifiée.
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding:16px 40px; background-color:#141414;">
+                            <p style="margin:0; font-size:12px; color:#5c5c5c;">&copy; Filmexa. Tous droits réservés.</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

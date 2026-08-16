@@ -6,7 +6,7 @@
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/08 18:09:41 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/08/16 12:45:36 by kchaouki         ###   ########.fr       */
+/*   Updated: 2026/08/16 17:05:45 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -106,6 +106,20 @@ public class User extends AbstractEntity implements UserDetails {
 
     @Column
     private LocalDateTime passwordResetCodeExpiresAt;
+
+    @Column
+    @Size(max = 100, message = "Email must be less than 100 characters")
+    @Pattern(
+        regexp = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$",
+        message = "Email is not valid"
+    )
+    private String pendingEmail;
+
+    @Column
+    private String emailChangeCode;
+
+    @Column
+    private LocalDateTime emailChangeCodeExpiresAt;
 
     @JsonIgnore
     @Column(columnDefinition = "TEXT")

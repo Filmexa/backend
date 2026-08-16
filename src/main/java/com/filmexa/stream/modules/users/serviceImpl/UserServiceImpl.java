@@ -6,7 +6,7 @@
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/08 18:23:04 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/08/16 15:46:16 by kchaouki         ###   ########.fr       */
+/*   Updated: 2026/08/16 17:05:51 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -208,6 +208,51 @@ public class UserServiceImpl implements UserService {
         user.setPreferredLanguage(preferredLanguage);
         user.setUpdatedAt(LocalDateTime.now());
         userRepository.save(user);
+    }
+
+    @Override
+    public void requestEmailChange(String username, String newEmail) {
+        User user = userRepository.findByUsername(username).orElse(null);
+        if (user == null)
+            return;
+
+        if (newEmail.equalsIgnoreCase(user.getEmail())) {
+            throw new IllegalArgumentException("New email must be different from current email");
+        }
+        if (userRepository.findByEmail(newEmail).isPresent()) {
+            throw new IllegalArgumentException("Email already registered");
+        }
+
+        String code = generateVerificationCode();
+        user.setPendingEmail(newEmail);
+        user.setEmailChangeCode(code);
+        user.setEmailChangeCodeExpiresAt(LocalDateTime.now().plusMinutes(verificationExpirationMinutes));
+        userRepository.save(user);
+
+        notificationService.sendEmailChangeCode(user, newEmail, code, verificationExpirationMinutes);
+    }
+
+    @Override
+    public boolean confirmEmailChange(String username, String code) {
+        User user = userRepository.findByUsername(username).orElse(null);
+        if (user == null || user.getPendingEmail() == null || user.getEmailChangeCode() == null) {
+            return false;
+        }
+        if (!user.getEmailChangeCode().equals(code)) {
+            return false;
+        }
+        if (user.getEmailChangeCodeExpiresAt() == null
+                || user.getEmailChangeCodeExpiresAt().isBefore(LocalDateTime.now())) {
+            return false;
+        }
+
+        user.setEmail(user.getPendingEmail());
+        user.setPendingEmail(null);
+        user.setEmailChangeCode(null);
+        user.setEmailChangeCodeExpiresAt(null);
+        user.setUpdatedAt(LocalDateTime.now());
+        userRepository.save(user);
+        return true;
     }
 
 }
