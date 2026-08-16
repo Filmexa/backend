@@ -6,7 +6,7 @@
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/08 18:23:06 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/08/16 15:22:52 by kchaouki         ###   ########.fr       */
+/*   Updated: 2026/08/16 15:45:13 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import com.filmexa.stream.modules.auth.dto.RegisterRequest;
 import com.filmexa.stream.modules.auth.dto.ResetPasswordRequest;
 import com.filmexa.stream.modules.users.entity.User;
+import com.filmexa.stream.modules.users.enums.PreferredLanguage;
 
 @Service
 public interface UserService {
@@ -42,4 +43,6 @@ public interface UserService {
     public void saveRefreshToken(String username, String refreshToken);
 
     public void logout(String username);
+
+    public void changePreferredLanguage(String username, PreferredLanguage preferredLanguage);
 }

@@ -6,7 +6,7 @@
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/08 18:23:04 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/08/16 15:22:55 by kchaouki         ###   ########.fr       */
+/*   Updated: 2026/08/16 15:46:16 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -145,6 +145,11 @@ public class UserServiceImpl implements UserService {
         notificationService.sendPasswordResetCode(user, code, verificationExpirationMinutes);
     }
 
+    private String generateVerificationCode() {
+        int code = RANDOM.nextInt(1_000_000);
+        return String.format("%06d", code);
+    }
+
     @Override
     public void resendPasswordResetCode(String email) {
         requestPasswordReset(email);
@@ -194,9 +199,15 @@ public class UserServiceImpl implements UserService {
         userRepository.save(user);
     }
 
-    private String generateVerificationCode() {
-        int code = RANDOM.nextInt(1_000_000);
-        return String.format("%06d", code);
+    @Override
+    public void changePreferredLanguage(String username, PreferredLanguage preferredLanguage) {
+        User user = userRepository.findByUsername(username).orElse(null);
+        if (user == null)
+            return;
+        
+        user.setPreferredLanguage(preferredLanguage);
+        user.setUpdatedAt(LocalDateTime.now());
+        userRepository.save(user);
     }
 
 }
