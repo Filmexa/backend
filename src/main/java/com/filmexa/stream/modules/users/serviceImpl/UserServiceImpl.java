@@ -6,7 +6,7 @@
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/08 18:23:04 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/08/16 17:05:51 by kchaouki         ###   ########.fr       */
+/*   Updated: 2026/08/16 17:29:55 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,10 +25,13 @@ import com.filmexa.stream.modules.auth.dto.RegisterRequest;
 import com.filmexa.stream.modules.auth.dto.ResetPasswordRequest;
 import com.filmexa.stream.modules.notification.service.NotificationService;
 import com.filmexa.stream.modules.users.entity.User;
+import com.filmexa.stream.modules.users.entity.UserVerificationToken;
 import com.filmexa.stream.modules.users.enums.AuthProvider;
 import com.filmexa.stream.modules.users.enums.PreferredLanguage;
 import com.filmexa.stream.modules.users.enums.Role;
+import com.filmexa.stream.modules.users.enums.TokenType;
 import com.filmexa.stream.modules.users.repo.UserRepository;
+import com.filmexa.stream.modules.users.repo.UserVerificationTokenRepository;
 import com.filmexa.stream.modules.users.service.UserService;
 
 @Service
@@ -37,6 +40,7 @@ public class UserServiceImpl implements UserService {
     private static final SecureRandom RANDOM = new SecureRandom();
 
     private final UserRepository userRepository;
+    private final UserVerificationTokenRepository tokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final NotificationService notificationService;
 
@@ -44,8 +48,10 @@ public class UserServiceImpl implements UserService {
     private long verificationExpirationMinutes;
 
     @Autowired
-    public UserServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder, NotificationService notificationService) {
+    public UserServiceImpl(UserRepository userRepository, UserVerificationTokenRepository tokenRepository,
+            PasswordEncoder passwordEncoder, NotificationService notificationService) {
         this.userRepository = userRepository;
+        this.tokenRepository = tokenRepository;
         this.passwordEncoder = passwordEncoder;
         this.notificationService = notificationService;
     }
@@ -84,11 +90,12 @@ public class UserServiceImpl implements UserService {
         user.setCreatedAt(now);
         user.setUpdatedAt(now);
 
-        String code = generateVerificationCode();
-        user.setEmailVerificationCode(code);
-        user.setEmailVerificationCodeExpiresAt(now.plusMinutes(verificationExpirationMinutes));
-
         User saved = userRepository.save(user);
+
+        String code = generateVerificationCode();
+        upsertToken(saved, TokenType.EMAIL_VERIFICATION, code, null,
+                now.plusMinutes(verificationExpirationMinutes));
+
         notificationService.sendVerificationCode(saved, code, verificationExpirationMinutes);
         return saved;
     }
@@ -96,22 +103,19 @@ public class UserServiceImpl implements UserService {
     @Override
     public boolean verifyEmail(String email, String code) {
         User user = userRepository.findByEmail(email).orElse(null);
-        if (user == null || user.getEmailVerificationCode() == null) {
+        if (user == null) {
             return false;
         }
-        if (!user.getEmailVerificationCode().equals(code)) {
-            return false;
-        }
-        if (user.getEmailVerificationCodeExpiresAt() == null
-                || user.getEmailVerificationCodeExpiresAt().isBefore(LocalDateTime.now())) {
+        UserVerificationToken token = tokenRepository.findByUserAndType(user, TokenType.EMAIL_VERIFICATION)
+                .orElse(null);
+        if (!isValid(token, code)) {
             return false;
         }
 
         user.setEnabled(true);
-        user.setEmailVerificationCode(null);
-        user.setEmailVerificationCodeExpiresAt(null);
         user.setUpdatedAt(LocalDateTime.now());
         userRepository.save(user);
+        tokenRepository.delete(token);
         return true;
     }
 
@@ -123,9 +127,8 @@ public class UserServiceImpl implements UserService {
         }
 
         String code = generateVerificationCode();
-        user.setEmailVerificationCode(code);
-        user.setEmailVerificationCodeExpiresAt(LocalDateTime.now().plusMinutes(verificationExpirationMinutes));
-        userRepository.save(user);
+        upsertToken(user, TokenType.EMAIL_VERIFICATION, code, null,
+                LocalDateTime.now().plusMinutes(verificationExpirationMinutes));
 
         notificationService.sendVerificationCode(user, code, verificationExpirationMinutes);
     }
@@ -138,9 +141,8 @@ public class UserServiceImpl implements UserService {
         }
 
         String code = generateVerificationCode();
-        user.setPasswordResetCode(code);
-        user.setPasswordResetCodeExpiresAt(LocalDateTime.now().plusMinutes(verificationExpirationMinutes));
-        userRepository.save(user);
+        upsertToken(user, TokenType.PASSWORD_RESET, code, null,
+                LocalDateTime.now().plusMinutes(verificationExpirationMinutes));
 
         notificationService.sendPasswordResetCode(user, code, verificationExpirationMinutes);
     }
@@ -158,22 +160,19 @@ public class UserServiceImpl implements UserService {
     @Override
     public boolean resetPassword(ResetPasswordRequest request) {
         User user = userRepository.findByEmail(request.getEmail()).orElse(null);
-        if (user == null || user.getPasswordResetCode() == null) {
+        if (user == null) {
             return false;
         }
-        if (!user.getPasswordResetCode().equals(request.getCode())) {
-            return false;
-        }
-        if (user.getPasswordResetCodeExpiresAt() == null
-                || user.getPasswordResetCodeExpiresAt().isBefore(LocalDateTime.now())) {
+        UserVerificationToken token = tokenRepository.findByUserAndType(user, TokenType.PASSWORD_RESET)
+                .orElse(null);
+        if (!isValid(token, request.getCode())) {
             return false;
         }
 
         user.setHashedPassword(passwordEncoder.encode(request.getNewPassword()));
-        user.setPasswordResetCode(null);
-        user.setPasswordResetCodeExpiresAt(null);
         user.setUpdatedAt(LocalDateTime.now());
         userRepository.save(user);
+        tokenRepository.delete(token);
         return true;
     }
 
@@ -204,7 +203,7 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findByUsername(username).orElse(null);
         if (user == null)
             return;
-        
+
         user.setPreferredLanguage(preferredLanguage);
         user.setUpdatedAt(LocalDateTime.now());
         userRepository.save(user);
@@ -224,10 +223,8 @@ public class UserServiceImpl implements UserService {
         }
 
         String code = generateVerificationCode();
-        user.setPendingEmail(newEmail);
-        user.setEmailChangeCode(code);
-        user.setEmailChangeCodeExpiresAt(LocalDateTime.now().plusMinutes(verificationExpirationMinutes));
-        userRepository.save(user);
+        upsertToken(user, TokenType.EMAIL_CHANGE, code, newEmail,
+                LocalDateTime.now().plusMinutes(verificationExpirationMinutes));
 
         notificationService.sendEmailChangeCode(user, newEmail, code, verificationExpirationMinutes);
     }
@@ -235,24 +232,45 @@ public class UserServiceImpl implements UserService {
     @Override
     public boolean confirmEmailChange(String username, String code) {
         User user = userRepository.findByUsername(username).orElse(null);
-        if (user == null || user.getPendingEmail() == null || user.getEmailChangeCode() == null) {
+        if (user == null) {
             return false;
         }
-        if (!user.getEmailChangeCode().equals(code)) {
-            return false;
-        }
-        if (user.getEmailChangeCodeExpiresAt() == null
-                || user.getEmailChangeCodeExpiresAt().isBefore(LocalDateTime.now())) {
+        UserVerificationToken token = tokenRepository.findByUserAndType(user, TokenType.EMAIL_CHANGE)
+                .orElse(null);
+        if (!isValid(token, code) || token.getNewEmail() == null) {
             return false;
         }
 
-        user.setEmail(user.getPendingEmail());
-        user.setPendingEmail(null);
-        user.setEmailChangeCode(null);
-        user.setEmailChangeCodeExpiresAt(null);
+        user.setEmail(token.getNewEmail());
         user.setUpdatedAt(LocalDateTime.now());
         userRepository.save(user);
+        tokenRepository.delete(token);
         return true;
+    }
+
+    private boolean isValid(UserVerificationToken token, String code) {
+        if (token == null || code == null) {
+            return false;
+        }
+        if (!token.getToken().equals(code)) {
+            return false;
+        }
+        return token.getExpiresAt() != null && token.getExpiresAt().isAfter(LocalDateTime.now());
+    }
+
+    private void upsertToken(User user, TokenType type, String code, String newEmail, LocalDateTime expiresAt) {
+        UserVerificationToken token = tokenRepository.findByUserAndType(user, type).orElseGet(() -> {
+            UserVerificationToken newToken = new UserVerificationToken();
+            newToken.setUser(user);
+            newToken.setType(type);
+            newToken.setCreatedAt(LocalDateTime.now());
+            return newToken;
+        });
+
+        token.setToken(code);
+        token.setNewEmail(newEmail);
+        token.setExpiresAt(expiresAt);
+        tokenRepository.save(token);
     }
 
 }
