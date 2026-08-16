@@ -6,7 +6,7 @@
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/14 21:40:42 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/08/16 14:53:32 by kchaouki         ###   ########.fr       */
+/*   Updated: 2026/08/16 15:29:27 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -36,11 +36,6 @@ public class RegisterRequest {
     )
     private String email;
 
-    @NotBlank(message = "Password is required")
-    @Pattern(
-        regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$",
-        message = "Password must contain at least one uppercase letter, one lowercase letter, one number and one special character"
-    )
     @NotBlank(message = "Password is required")
     @Pattern(
         regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$",
