@@ -6,29 +6,48 @@
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/08 18:23:04 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/08/14 20:56:45 by kchaouki         ###   ########.fr       */
+/*   Updated: 2026/08/16 15:08:05 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 package com.filmexa.stream.modules.users.serviceImpl;
 
+import java.security.SecureRandom;
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.filmexa.stream.modules.auth.dto.RegisterRequest;
+import com.filmexa.stream.modules.auth.dto.ResetPasswordRequest;
+import com.filmexa.stream.modules.notification.service.NotificationService;
 import com.filmexa.stream.modules.users.entity.User;
+import com.filmexa.stream.modules.users.enums.AuthProvider;
+import com.filmexa.stream.modules.users.enums.PreferredLanguage;
+import com.filmexa.stream.modules.users.enums.Role;
 import com.filmexa.stream.modules.users.repo.UserRepository;
 import com.filmexa.stream.modules.users.service.UserService;
 
 @Service
 public class UserServiceImpl implements UserService {
 
+    private static final SecureRandom RANDOM = new SecureRandom();
+
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final NotificationService notificationService;
+
+    @Value("${security.verification.expiration-minutes}")
+    private long verificationExpirationMinutes;
 
     @Autowired
-    public UserServiceImpl(UserRepository userRepository) {
+    public UserServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder, NotificationService notificationService) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.notificationService = notificationService;
     }
 
     @Override
@@ -39,6 +58,125 @@ public class UserServiceImpl implements UserService {
     @Override
     public Optional<User> findByUsername(String username) {
         return userRepository.findByUsername(username);
+    }
+
+    @Override
+    public User registerUser(RegisterRequest request) {
+        if (userRepository.findByUsername(request.getUsername()).isPresent()) {
+            throw new IllegalArgumentException("Username already taken");
+        }
+        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+            throw new IllegalArgumentException("Email already registered");
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+
+        User user = new User();
+        user.setUsername(request.getUsername());
+        user.setEmail(request.getEmail());
+        user.setHashedPassword(passwordEncoder.encode(request.getPassword()));
+        user.setFirstName(request.getFirstName());
+        user.setLastName(request.getLastName());
+        user.setAuthProvider(AuthProvider.LOCAL);
+        user.setPreferredLanguage(PreferredLanguage.ENGLISH);
+        user.setRole(Role.USER);
+        user.setEnabled(false);
+        user.setCreatedAt(now);
+        user.setUpdatedAt(now);
+
+        String code = generateVerificationCode();
+        user.setEmailVerificationCode(code);
+        user.setEmailVerificationCodeExpiresAt(now.plusMinutes(verificationExpirationMinutes));
+
+        User saved = userRepository.save(user);
+        notificationService.sendVerificationCode(saved, code, verificationExpirationMinutes);
+        return saved;
+    }
+
+    @Override
+    public boolean verifyEmail(String email, String code) {
+        User user = userRepository.findByEmail(email).orElse(null);
+        if (user == null || user.getEmailVerificationCode() == null) {
+            return false;
+        }
+        if (!user.getEmailVerificationCode().equals(code)) {
+            return false;
+        }
+        if (user.getEmailVerificationCodeExpiresAt() == null
+                || user.getEmailVerificationCodeExpiresAt().isBefore(LocalDateTime.now())) {
+            return false;
+        }
+
+        user.setEnabled(true);
+        user.setEmailVerificationCode(null);
+        user.setEmailVerificationCodeExpiresAt(null);
+        user.setUpdatedAt(LocalDateTime.now());
+        userRepository.save(user);
+        return true;
+    }
+
+    @Override
+    public void requestPasswordReset(String email) {
+        User user = userRepository.findByEmail(email).orElse(null);
+        if (user == null) {
+            return;
+        }
+
+        String code = generateVerificationCode();
+        user.setPasswordResetCode(code);
+        user.setPasswordResetCodeExpiresAt(LocalDateTime.now().plusMinutes(verificationExpirationMinutes));
+        userRepository.save(user);
+
+        notificationService.sendPasswordResetCode(user, code, verificationExpirationMinutes);
+    }
+
+    @Override
+    public boolean resetPassword(ResetPasswordRequest request) {
+        User user = userRepository.findByEmail(request.getEmail()).orElse(null);
+        if (user == null || user.getPasswordResetCode() == null) {
+            return false;
+        }
+        if (!user.getPasswordResetCode().equals(request.getCode())) {
+            return false;
+        }
+        if (user.getPasswordResetCodeExpiresAt() == null
+                || user.getPasswordResetCodeExpiresAt().isBefore(LocalDateTime.now())) {
+            return false;
+        }
+
+        user.setHashedPassword(passwordEncoder.encode(request.getNewPassword()));
+        user.setPasswordResetCode(null);
+        user.setPasswordResetCodeExpiresAt(null);
+        user.setUpdatedAt(LocalDateTime.now());
+        userRepository.save(user);
+        return true;
+    }
+
+    @Override
+    public void saveRefreshToken(String username, String refreshToken) {
+        User user = userRepository.findByUsername(username).orElse(null);
+        if (user == null) {
+            return;
+        }
+
+        user.setRefreshToken(refreshToken);
+        userRepository.save(user);
+    }
+
+    @Override
+    public void logout(String username) {
+        User user = userRepository.findByUsername(username).orElse(null);
+        if (user == null) {
+            return;
+        }
+
+        user.setRefreshToken(null);
+        userRepository.save(user);
+    }
+
+    private String generateVerificationCode() {
+        int code = RANDOM.nextInt(1_000_000);
+        return String.format("%06d", code);
     }
 
 }
