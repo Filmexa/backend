@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 
 import com.filmexa.stream.modules.auth.dto.RegisterRequest;
 import com.filmexa.stream.modules.auth.dto.ResetPasswordRequest;
+import com.filmexa.stream.modules.users.dto.UpdateProfileRequest;
 import com.filmexa.stream.modules.users.entity.User;
 import com.filmexa.stream.modules.users.enums.PreferredLanguage;
 
@@ -50,4 +51,6 @@ public interface UserService {
     public void requestEmailChange(String username, String newEmail);
 
     public boolean confirmEmailChange(String username, String code);
+
+    public User updateProfile(String username, UpdateProfileRequest request);
 }

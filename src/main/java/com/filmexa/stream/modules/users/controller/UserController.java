@@ -6,7 +6,7 @@
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/08 18:24:35 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/08/16 19:10:35 by kchaouki         ###   ########.fr       */
+/*   Updated: 2026/08/16 19:38:37 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,6 +20,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -34,6 +35,8 @@ import com.filmexa.stream.modules.users.dto.AvatarFile;
 import com.filmexa.stream.modules.users.dto.ChangeEmailRequest;
 import com.filmexa.stream.modules.users.dto.ChangePreferredLanguageRequest;
 import com.filmexa.stream.modules.users.dto.ConfirmEmailChangeRequest;
+import com.filmexa.stream.modules.users.dto.UpdateProfileRequest;
+import com.filmexa.stream.modules.users.dto.UserProfileResponse;
 import com.filmexa.stream.modules.users.entity.User;
 import com.filmexa.stream.modules.users.service.AvatarService;
 import com.filmexa.stream.modules.users.service.UserService;
@@ -132,5 +135,50 @@ public class UserController {
         } catch (NoSuchElementException e) {
             return ResponseEntity.notFound().build();
         }
+    }
+
+    @GetMapping("/{userId}/profile")
+    public ResponseEntity<UserProfileResponse> getUserProfile(@PathVariable UUID userId) {
+        User user = userService.findById(userId)
+                .orElseThrow(() -> new NoSuchElementException("User not found"));
+        return ResponseEntity.ok(toProfileResponse(user));
+    }
+
+    @GetMapping("/me/profile")
+    public ResponseEntity<UserProfileResponse> getMyProfile() {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        try {
+            User user = userService.findByUsername(username)
+                    .orElseThrow(() -> new NoSuchElementException("User not found"));
+            return ResponseEntity.ok(toProfileResponse(user));
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        }
+    }
+
+    @PatchMapping("/me/profile")
+    public ResponseEntity<?> updateMyProfile(@Valid @RequestBody UpdateProfileRequest request) {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        try {
+            User updated = userService.updateProfile(username, request);
+            return ResponseEntity.ok(toProfileResponse(updated));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+        }
+    }
+
+    private UserProfileResponse toProfileResponse(User user) {
+        String avatarUrl = user.getProfilePictureUrl() != null
+                ? "/api/users/" + user.getId() + "/avatar"
+                : null;
+
+        return new UserProfileResponse(
+                user.getId(),
+                user.getUsername(),
+                user.getFirstName(),
+                user.getLastName(),
+                avatarUrl
+        );
     }
 }

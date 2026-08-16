@@ -6,7 +6,7 @@
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/08 18:23:04 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/08/16 18:32:21 by kchaouki         ###   ########.fr       */
+/*   Updated: 2026/08/16 19:31:17 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,7 @@ package com.filmexa.stream.modules.users.serviceImpl;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -25,6 +26,7 @@ import org.springframework.stereotype.Service;
 import com.filmexa.stream.modules.auth.dto.RegisterRequest;
 import com.filmexa.stream.modules.auth.dto.ResetPasswordRequest;
 import com.filmexa.stream.modules.notification.service.NotificationService;
+import com.filmexa.stream.modules.users.dto.UpdateProfileRequest;
 import com.filmexa.stream.modules.users.entity.User;
 import com.filmexa.stream.modules.users.entity.UserVerificationToken;
 import com.filmexa.stream.modules.users.enums.AuthProvider;
@@ -246,6 +248,25 @@ public class UserServiceImpl implements UserService {
         userRepository.save(user);
         tokenRepository.delete(token);
         return true;
+    }
+
+    @Override
+    public User updateProfile(String username, UpdateProfileRequest request) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new NoSuchElementException("User not found"));
+
+        if (request.getFirstName() != null) {
+            user.setFirstName(request.getFirstName());
+        }
+        if (request.getLastName() != null) {
+            user.setLastName(request.getLastName());
+        }
+        if (request.getPhoneNumber() != null) {
+            user.setPhoneNumber(request.getPhoneNumber());
+        }
+
+        user.setUpdatedAt(LocalDateTime.now());
+        return userRepository.save(user);
     }
 
     private boolean isValid(UserVerificationToken token, String code) {

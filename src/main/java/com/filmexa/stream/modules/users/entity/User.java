@@ -6,7 +6,7 @@
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/08 18:09:41 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/08/16 17:28:20 by kchaouki         ###   ########.fr       */
+/*   Updated: 2026/08/16 19:24:34 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -98,9 +98,6 @@ public class User extends AbstractEntity implements UserDetails {
     @JsonIgnore
     @Column(columnDefinition = "TEXT")
     private String refreshToken;
-
-    @Column(columnDefinition = "TEXT")
-    private String bio;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
