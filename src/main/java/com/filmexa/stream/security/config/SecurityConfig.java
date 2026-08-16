@@ -55,6 +55,7 @@ public class SecurityConfig {
 		http.authorizeHttpRequests(auth -> auth
 						.requestMatchers(SWAGGER_WHITELIST).permitAll()
 						.requestMatchers("/api/auth/**").permitAll()
+						.requestMatchers("/error").permitAll()
 						.anyRequest().authenticated())
 				.csrf(csrf -> csrf.disable())
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
