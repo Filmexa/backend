@@ -24,7 +24,10 @@ import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.filmexa.stream.modules.users.dto.AvatarFile;
@@ -47,6 +50,7 @@ public class AvatarServiceImpl implements AvatarService {
     );
 
     private final UserRepository userRepository;
+    private final RestTemplate restTemplate = new RestTemplate();
 
     @Value("${app.img-storage-path}")
     private String imgStoragePath;
@@ -57,6 +61,10 @@ public class AvatarServiceImpl implements AvatarService {
             throw new NoSuchElementException("No avatar found for this user");
         }
 
+        if (isRemoteUrl(pictureUrl)) {
+            return loadRemoteAvatar(pictureUrl);
+        }
+
         try {
             byte[] data = Files.readAllBytes(resolve(pictureUrl));
             MediaType contentType = ALLOWED_EXTENSIONS.getOrDefault(
@@ -64,6 +72,30 @@ public class AvatarServiceImpl implements AvatarService {
             return new AvatarFile(data, contentType);
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to read avatar file", e);
+        }
+    }
+
+    private boolean isRemoteUrl(String pictureUrl) {
+        return pictureUrl.startsWith("http://") || pictureUrl.startsWith("https://");
+    }
+
+    private AvatarFile loadRemoteAvatar(String pictureUrl) {
+        try {
+            ResponseEntity<byte[]> response = restTemplate.getForEntity(pictureUrl, byte[].class);
+            byte[] data = response.getBody();
+            if (data == null) {
+                throw new NoSuchElementException("No avatar found for this user");
+            }
+
+            MediaType contentType = response.getHeaders().getContentType();
+            if (contentType == null) {
+                contentType = ALLOWED_EXTENSIONS.getOrDefault(
+                        extensionOf(pictureUrl), MediaType.APPLICATION_OCTET_STREAM);
+            }
+
+            return new AvatarFile(data, contentType);
+        } catch (RestClientException e) {
+            throw new NoSuchElementException("No avatar found for this user");
         }
     }
 
