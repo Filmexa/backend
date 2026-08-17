@@ -1,29 +1,26 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   AuthProvider.java                                  :+:      :+:    :+:   */
+/*   AvatarService.java                                 :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/08/10 16:28:54 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/08/14 22:28:08 by kchaouki         ###   ########.fr       */
+/*   Created: 2026/08/16 18:12:21 by kchaouki          #+#    #+#             */
+/*   Updated: 2026/08/16 19:10:55 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-package com.filmexa.stream.modules.users.enums;
+package com.filmexa.stream.modules.users.service;
 
-public enum AuthProvider {
-    LOCAL("Local"),
-    GOOGLE("Google"),
-    INTRA("Intra 42");
+import java.util.UUID;
 
-    private final String displayName;
+import org.springframework.web.multipart.MultipartFile;
 
-    AuthProvider(String displayName) {
-        this.displayName = displayName;
-    }
+import com.filmexa.stream.modules.users.dto.AvatarFile;
 
-    public String getDisplayName() {
-        return displayName;
-    }
+public interface AvatarService {
+
+    AvatarFile loadAvatar(String pictureUrl);
+
+    void saveAvatar(UUID userId, MultipartFile file);
 }

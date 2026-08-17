@@ -1,29 +1,29 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   AuthProvider.java                                  :+:      :+:    :+:   */
+/*   TokenType.java                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/08/10 16:28:54 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/08/14 22:28:08 by kchaouki         ###   ########.fr       */
+/*   Created: 2026/08/16 17:14:14 by kchaouki          #+#    #+#             */
+/*   Updated: 2026/08/16 17:29:17 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 package com.filmexa.stream.modules.users.enums;
 
-public enum AuthProvider {
-    LOCAL("Local"),
-    GOOGLE("Google"),
-    INTRA("Intra 42");
+public enum TokenType {
+    EMAIL_VERIFICATION("email_verification"),
+    PASSWORD_RESET("password_reset"),
+    EMAIL_CHANGE("email_change");
 
-    private final String displayName;
+    private final String value;
 
-    AuthProvider(String displayName) {
-        this.displayName = displayName;
+    TokenType(String value) {
+        this.value = value;
     }
 
-    public String getDisplayName() {
-        return displayName;
+    public String getValue() {
+        return value;
     }
 }

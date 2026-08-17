@@ -1,29 +1,23 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   AuthProvider.java                                  :+:      :+:    :+:   */
+/*   AuthResponse.java                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/08/10 16:28:54 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/08/14 22:28:08 by kchaouki         ###   ########.fr       */
+/*   Created: 2026/08/14 15:43:19 by kchaouki          #+#    #+#             */
+/*   Updated: 2026/08/14 21:53:52 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-package com.filmexa.stream.modules.users.enums;
+package com.filmexa.stream.modules.auth.dto;
 
-public enum AuthProvider {
-    LOCAL("Local"),
-    GOOGLE("Google"),
-    INTRA("Intra 42");
+import lombok.Data;
 
-    private final String displayName;
-
-    AuthProvider(String displayName) {
-        this.displayName = displayName;
-    }
-
-    public String getDisplayName() {
-        return displayName;
-    }
+@Data
+public class AuthResponse {
+    
+    private String email;
+    private String accessToken;
+    private String refreshToken;
 }

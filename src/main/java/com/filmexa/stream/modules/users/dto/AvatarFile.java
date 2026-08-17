@@ -1,29 +1,27 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   AuthProvider.java                                  :+:      :+:    :+:   */
+/*   AvatarFile.java                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/08/10 16:28:54 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/08/14 22:28:08 by kchaouki         ###   ########.fr       */
+/*   Created: 2026/08/16 18:12:21 by kchaouki          #+#    #+#             */
+/*   Updated: 2026/08/16 19:10:46 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-package com.filmexa.stream.modules.users.enums;
+package com.filmexa.stream.modules.users.dto;
 
-public enum AuthProvider {
-    LOCAL("Local"),
-    GOOGLE("Google"),
-    INTRA("Intra 42");
+import org.springframework.http.MediaType;
 
-    private final String displayName;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 
-    AuthProvider(String displayName) {
-        this.displayName = displayName;
-    }
+@Data
+@AllArgsConstructor
+public class AvatarFile {
 
-    public String getDisplayName() {
-        return displayName;
-    }
+    private byte[] data;
+
+    private MediaType contentType;
 }

@@ -6,7 +6,7 @@
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/08 18:09:41 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/08/11 16:36:44 by kchaouki         ###   ########.fr       */
+/*   Updated: 2026/08/16 19:24:34 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,6 +32,9 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 @Data
@@ -40,19 +43,46 @@ import lombok.Data;
 public class User extends AbstractEntity implements UserDetails {
 
     @Column(unique = true)
+    @NotBlank(message = "Username is required")
+    @Size(min = 3, max = 30, message = "Username must be between 3 and 30 characters")
+    @Pattern(
+        regexp = "^[a-zA-Z0-9_-]+$",
+        message = "Username can only contain letters, numbers, underscores and hyphens"
+    )
     private String username;
 
     @JsonIgnore
     private String hashedPassword;
 
+    @Size(max = 50, message = "First name must be less than 50 characters")
+    @Pattern(
+        regexp = "^[a-zA-Z0-9_-]+$",
+        message = "First name can only contain letters, numbers, underscores and hyphens"
+    )
     private String firstName;
 
+    @Size(max = 50, message = "Last name must be less than 50 characters")
+    @Pattern(
+        regexp = "^[a-zA-Z0-9_-]+$",
+        message = "Last name can only contain letters, numbers, underscores and hyphens"
+    )
     private String lastName;
 
     @Column(unique = true)
+    @NotBlank(message = "Email is required")
+    @Size(max = 100, message = "Email must be less than 100 characters")
+    @Pattern(
+        regexp = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$",
+        message = "Email is not valid"
+    )
     private String email;
 
     @Column(unique = true)
+    @Size(max = 20, message = "Phone number must be less than 20 characters")
+    @Pattern(
+        regexp = "^[0-9+\\-\\s]+$",
+        message = "Phone number is not valid"
+    )
     private String phoneNumber;
 
     @Column
@@ -65,14 +95,9 @@ public class User extends AbstractEntity implements UserDetails {
     @Column
     private String providerId;
 
-    @Column
-    private String emailVerificationCode;
-
-    @Column
-    private LocalDateTime emailVerificationCodeExpiresAt;
-
+    @JsonIgnore
     @Column(columnDefinition = "TEXT")
-    private String bio;
+    private String refreshToken;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -97,7 +122,11 @@ public class User extends AbstractEntity implements UserDetails {
 
     @Override
     public @Nullable String getPassword() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getPassword'");
+        return hashedPassword;
+    }
+
+    @Override
+    public @Nullable String getUsername() {
+        return username;
     }
 }
