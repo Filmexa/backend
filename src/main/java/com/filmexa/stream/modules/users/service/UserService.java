@@ -6,7 +6,7 @@
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/08 18:23:06 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/08/16 19:42:52 by kchaouki         ###   ########.fr       */
+/*   Updated: 2026/08/17 13:06:53 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,13 +19,12 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import com.filmexa.stream.modules.auth.dto.FtUserResponse;
 import com.filmexa.stream.modules.auth.dto.RegisterRequest;
 import com.filmexa.stream.modules.auth.dto.ResetPasswordRequest;
 import com.filmexa.stream.modules.users.dto.UpdateProfileRequest;
 import com.filmexa.stream.modules.users.entity.User;
-import com.filmexa.stream.modules.users.enums.AuthProvider;
 import com.filmexa.stream.modules.users.enums.PreferredLanguage;
-import com.filmexa.stream.modules.users.enums.Role;
 
 @Service
 public interface UserService {
@@ -59,4 +58,8 @@ public interface UserService {
     public User updateProfile(String username, UpdateProfileRequest request);
 
     public Page<User> getAllUsers(Pageable pageable);
+
+    public User findOrCreateFtUser(FtUserResponse ftUser);
+
+    public void setPassword(String username, String newPassword);
 }

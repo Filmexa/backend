@@ -6,7 +6,7 @@
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/08 18:34:10 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/08/14 21:33:20 by kchaouki         ###   ########.fr       */
+/*   Updated: 2026/08/17 13:03:34 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -42,6 +42,19 @@ public class SecurityConfig {
 			"/v3/api-docs.yaml"
 	};
 
+	private static final String[] AUTH_WHITELIST = {
+			"/api/auth/login",
+			"/api/auth/register",
+			"/api/auth/verify",
+			"/api/auth/resend-verification",
+			"/api/auth/forgot-password",
+			"/api/auth/resend-password-reset",
+			"/api/auth/reset-password",
+			"/api/auth/refresh",
+			"/api/auth/42",
+			"/api/auth/42/callback"
+	};
+
 	private final UserDetailsService userDetailsService;
 	private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
@@ -54,7 +67,7 @@ public class SecurityConfig {
 	public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 		http.authorizeHttpRequests(auth -> auth
 						.requestMatchers(SWAGGER_WHITELIST).permitAll()
-						.requestMatchers("/api/auth/**").permitAll()
+						.requestMatchers(AUTH_WHITELIST).permitAll()
 						.requestMatchers("/error").permitAll()
 						.anyRequest().authenticated())
 				.csrf(csrf -> csrf.disable())

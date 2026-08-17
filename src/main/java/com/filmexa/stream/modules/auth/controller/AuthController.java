@@ -6,11 +6,13 @@
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/14 15:44:40 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/08/16 15:25:10 by kchaouki         ###   ########.fr       */
+/*   Updated: 2026/08/17 13:05:53 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 package com.filmexa.stream.modules.auth.controller;
+
+import java.io.IOException;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,23 +22,31 @@ import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.filmexa.stream.modules.auth.dto.AuthRequest;
 import com.filmexa.stream.modules.auth.dto.AuthResponse;
 import com.filmexa.stream.modules.auth.dto.ForgotPasswordRequest;
+import com.filmexa.stream.modules.auth.dto.FtUserResponse;
 import com.filmexa.stream.modules.auth.dto.RefreshTokenRequest;
 import com.filmexa.stream.modules.auth.dto.RegisterRequest;
 import com.filmexa.stream.modules.auth.dto.ResetPasswordRequest;
+import com.filmexa.stream.modules.auth.dto.SetPasswordRequest;
 import com.filmexa.stream.modules.auth.dto.VerifyEmailRequest;
+import com.filmexa.stream.modules.auth.service.FtOAuthService;
 import com.filmexa.stream.modules.users.entity.User;
 import com.filmexa.stream.modules.users.service.UserService;
 import com.filmexa.stream.security.service.JwtService;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 
 @RestController
@@ -47,15 +57,23 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final UserService userService;
     private final JwtService jwtService;
+    private final FtOAuthService ftOAuthService;
 
-    public AuthController(AuthenticationManager authenticationManager, UserService userService, JwtService jwtService) {
+    public AuthController(AuthenticationManager authenticationManager, UserService userService, JwtService jwtService, FtOAuthService ftOAuthService) {
         this.authenticationManager = authenticationManager;
         this.userService = userService;
         this.jwtService = jwtService;
+        this.ftOAuthService = ftOAuthService;
     }
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody AuthRequest authRequest) {
+
+        User existingUser = userService.findByUsername(authRequest.getUsername()).orElse(null);
+        if (existingUser != null && existingUser.getHashedPassword() == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("This account has no password set. Log in with 42 or set a password first.");
+        }
 
         try {
             Authentication authenticationToken = new UsernamePasswordAuthenticationToken(authRequest.getUsername(), authRequest.getPassword());
@@ -88,6 +106,13 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Logout failed");
         }
         return ResponseEntity.ok("Logged out successfully");
+    }
+
+    @PutMapping("/set-password")
+    public ResponseEntity<?> setPassword(@Valid @RequestBody SetPasswordRequest request) {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        userService.setPassword(username, request.getPassword());
+        return ResponseEntity.ok("Password set successfully");
     }
 
     @PostMapping("/register")
@@ -175,4 +200,33 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/42")
+    public void loginWith42(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        response.sendRedirect(ftOAuthService.getAuthorizationUrl(request));
+    }
+
+    @GetMapping("/42/callback")
+    public ResponseEntity<?> callback(
+            @RequestParam String code,
+            @RequestParam String state,
+            HttpServletRequest request,
+            HttpServletResponse response
+    ) {
+        try {
+            FtUserResponse ftUser = ftOAuthService.authenticate(code, state, request);
+            User user = userService.findOrCreateFtUser(ftUser);
+
+            String accessToken = jwtService.generateToken(user);
+            String refreshToken = jwtService.generateRefreshToken(user);
+            userService.saveRefreshToken(user.getUsername(), refreshToken);
+
+            AuthResponse authResponse = new AuthResponse();
+            authResponse.setEmail(user.getEmail());
+            authResponse.setAccessToken(accessToken);
+            authResponse.setRefreshToken(refreshToken);
+            return ResponseEntity.ok(authResponse);
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
+    }
 }

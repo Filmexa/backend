@@ -6,7 +6,7 @@
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/08 18:23:04 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/08/16 19:43:48 by kchaouki         ###   ########.fr       */
+/*   Updated: 2026/08/17 13:06:56 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,6 +25,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.filmexa.stream.modules.auth.dto.FtUserResponse;
 import com.filmexa.stream.modules.auth.dto.RegisterRequest;
 import com.filmexa.stream.modules.auth.dto.ResetPasswordRequest;
 import com.filmexa.stream.modules.notification.service.NotificationService;
@@ -299,6 +300,55 @@ public class UserServiceImpl implements UserService {
         token.setNewEmail(newEmail);
         token.setExpiresAt(expiresAt);
         tokenRepository.save(token);
+    }
+
+    @Override
+    public User findOrCreateFtUser(FtUserResponse ftUser) {
+        Optional<User> existingUser =
+        userRepository.findByAuthProviderAndProviderId(
+                AuthProvider.INTRA,
+                String.valueOf(ftUser.getId())
+        );
+
+        if (existingUser.isPresent()) {
+            return existingUser.get();
+        }
+        
+        User user = new User();
+
+        user = new User();
+        user.setAuthProvider(AuthProvider.INTRA);
+
+        user.setProviderId(ftUser.getId().toString());
+        user.setUsername(ftUser.getLogin());
+        user.setEmail(ftUser.getEmail());
+        user.setFirstName(ftUser.getFirstName());
+        user.setLastName(ftUser.getLastName());
+        user.setProfilePictureUrl(ftUser.getImageUrl());
+
+        String ftPhone = ftUser.getPhone();
+        if (ftPhone != null && ftPhone.matches("^[0-9+\\-\\s]+$")) {
+            user.setPhoneNumber(ftPhone);
+        }
+
+        user.setPreferredLanguage(PreferredLanguage.ENGLISH);
+        user.setRole(Role.USER);
+        user.setEnabled(true);
+        user.setUpdatedAt(LocalDateTime.now());
+        user.setCreatedAt(LocalDateTime.now());
+
+        user = userRepository.save(user);
+        return user;
+    }
+
+    @Override
+    public void setPassword(String username, String newPassword) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new NoSuchElementException("User not found"));
+
+        user.setHashedPassword(passwordEncoder.encode(newPassword));
+        user.setUpdatedAt(LocalDateTime.now());
+        userRepository.save(user);
     }
 
 }
