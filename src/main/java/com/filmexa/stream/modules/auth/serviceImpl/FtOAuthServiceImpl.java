@@ -6,7 +6,7 @@
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/17 11:24:43 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/08/17 13:06:50 by kchaouki         ###   ########.fr       */
+/*   Updated: 2026/08/17 15:02:26 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -126,9 +126,6 @@ public class FtOAuthServiceImpl implements FtOAuthService {
         try {
             JsonNode me = restTemplate.exchange(
                     ME_URL, HttpMethod.GET, new HttpEntity<>(headers), JsonNode.class).getBody();
-
-            // print the response for debugging
-            System.out.println("42 API response: " + me);
 
             if (me == null) {
                 throw new IllegalStateException("Failed to retrieve 42 user");
