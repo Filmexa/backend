@@ -6,7 +6,7 @@
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/14 15:44:40 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/08/17 13:05:53 by kchaouki         ###   ########.fr       */
+/*   Updated: 2026/08/17 15:26:40 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,7 @@ package com.filmexa.stream.modules.auth.controller;
 
 import java.io.IOException;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -33,14 +34,15 @@ import org.springframework.web.bind.annotation.RestController;
 import com.filmexa.stream.modules.auth.dto.AuthRequest;
 import com.filmexa.stream.modules.auth.dto.AuthResponse;
 import com.filmexa.stream.modules.auth.dto.ForgotPasswordRequest;
-import com.filmexa.stream.modules.auth.dto.FtUserResponse;
+import com.filmexa.stream.modules.auth.dto.OAuthUserResponse;
 import com.filmexa.stream.modules.auth.dto.RefreshTokenRequest;
 import com.filmexa.stream.modules.auth.dto.RegisterRequest;
 import com.filmexa.stream.modules.auth.dto.ResetPasswordRequest;
 import com.filmexa.stream.modules.auth.dto.SetPasswordRequest;
 import com.filmexa.stream.modules.auth.dto.VerifyEmailRequest;
-import com.filmexa.stream.modules.auth.service.FtOAuthService;
+import com.filmexa.stream.modules.auth.service.ProviderAuthService;
 import com.filmexa.stream.modules.users.entity.User;
+import com.filmexa.stream.modules.users.enums.AuthProvider;
 import com.filmexa.stream.modules.users.service.UserService;
 import com.filmexa.stream.security.service.JwtService;
 
@@ -57,13 +59,17 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final UserService userService;
     private final JwtService jwtService;
-    private final FtOAuthService ftOAuthService;
+    private final ProviderAuthService ftOAuthService;
+    private final ProviderAuthService googleOAuthService;
 
-    public AuthController(AuthenticationManager authenticationManager, UserService userService, JwtService jwtService, FtOAuthService ftOAuthService) {
+    public AuthController(AuthenticationManager authenticationManager, UserService userService, JwtService jwtService,
+            @Qualifier("ftOAuthServiceImpl") ProviderAuthService ftOAuthService,
+            @Qualifier("googleOAuthServiceImpl") ProviderAuthService googleOAuthService) {
         this.authenticationManager = authenticationManager;
         this.userService = userService;
         this.jwtService = jwtService;
         this.ftOAuthService = ftOAuthService;
+        this.googleOAuthService = googleOAuthService;
     }
 
     @PostMapping("/login")
@@ -213,8 +219,38 @@ public class AuthController {
             HttpServletResponse response
     ) {
         try {
-            FtUserResponse ftUser = ftOAuthService.authenticate(code, state, request);
-            User user = userService.findOrCreateFtUser(ftUser);
+            OAuthUserResponse ftUser = ftOAuthService.authenticate(code, state, request);
+            User user = userService.findOrCreateOAuthUser(AuthProvider.INTRA, ftUser);
+
+            String accessToken = jwtService.generateToken(user);
+            String refreshToken = jwtService.generateRefreshToken(user);
+            userService.saveRefreshToken(user.getUsername(), refreshToken);
+
+            AuthResponse authResponse = new AuthResponse();
+            authResponse.setEmail(user.getEmail());
+            authResponse.setAccessToken(accessToken);
+            authResponse.setRefreshToken(refreshToken);
+            return ResponseEntity.ok(authResponse);
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/google")
+    public void loginWithGoogle(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        response.sendRedirect(googleOAuthService.getAuthorizationUrl(request));
+    }
+
+    @GetMapping("/google/callback")
+    public ResponseEntity<?> googleCallback(
+            @RequestParam String code,
+            @RequestParam String state,
+            HttpServletRequest request,
+            HttpServletResponse response
+    ) {
+        try {
+            OAuthUserResponse googleUser = googleOAuthService.authenticate(code, state, request);
+            User user = userService.findOrCreateOAuthUser(AuthProvider.GOOGLE, googleUser);
 
             String accessToken = jwtService.generateToken(user);
             String refreshToken = jwtService.generateRefreshToken(user);

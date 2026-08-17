@@ -1,12 +1,12 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   FtOAuthServiceImpl.java                            :+:      :+:    :+:   */
+/*   GoogleOAuthServiceImpl.java                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/08/17 11:24:43 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/08/17 15:39:44 by kchaouki         ###   ########.fr       */
+/*   Created: 2026/08/17 15:28:07 by kchaouki          #+#    #+#             */
+/*   Updated: 2026/08/17 15:58:03 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,30 +35,29 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 
 @Service
-public class FtOAuthServiceImpl implements ProviderAuthService {
+public class GoogleOAuthServiceImpl implements ProviderAuthService {
 
-    private static final String STATE_SESSION_KEY = "oauth2_state";
+    private static final String STATE_SESSION_KEY = "oauth2_google_state";
 
     private final RestTemplate restTemplate = new RestTemplate();
 
-    @Value("${ft.redirect-uri}")
+    @Value("${google.redirect-uri}")
     private String redirectUri;
 
-    @Value("${OAUTH_42_CLIENT_ID}")
+    @Value("${google.client.id}")
     private String clientId;
 
-    @Value("${OAUTH_42_CLIENT_SECRET}")
+    @Value("${google.client.secret}")
     private String clientSecret;
 
-    @Value("${ft.authorize-url}")
+    @Value("${google.authorize-url}")
     private String authorizeUrl;
 
-    @Value("${ft.token-url}")
+    @Value("${google.token-url}")
     private String tokenUrl;
 
-    @Value("${ft.me-url}")
-    private String meUrl;
-
+    @Value("${google.userinfo-url}")
+    private String userinfoUrl;
 
     @Override
     public String getAuthorizationUrl(HttpServletRequest request) {
@@ -71,7 +70,7 @@ public class FtOAuthServiceImpl implements ProviderAuthService {
                 .queryParam("client_id", clientId)
                 .queryParam("redirect_uri", redirectUri)
                 .queryParam("response_type", "code")
-                .queryParam("scope", "public")
+                .queryParam("scope", "openid email profile")
                 .queryParam("state", state)
                 .build()
                 .toUriString();
@@ -82,7 +81,7 @@ public class FtOAuthServiceImpl implements ProviderAuthService {
         validateState(state, request);
 
         String accessToken = exchangeCodeForAccessToken(code);
-        return fetchFtUser(accessToken);
+        return fetchGoogleUser(accessToken);
     }
 
     private void validateState(String state, HttpServletRequest request) {
@@ -116,39 +115,37 @@ public class FtOAuthServiceImpl implements ProviderAuthService {
                     tokenUrl, new HttpEntity<>(body, headers), OAuthTokenResponse.class);
 
             if (tokenResponse == null || tokenResponse.getAccessToken() == null) {
-                throw new IllegalStateException("Failed to obtain 42 access token");
+                throw new IllegalStateException("Failed to obtain Google access token");
             }
 
             return tokenResponse.getAccessToken();
         } catch (RestClientException e) {
-            throw new IllegalStateException("Failed to exchange code for 42 access token", e);
+            throw new IllegalStateException("Failed to exchange code for Google access token", e);
         }
     }
 
-    private OAuthUserResponse fetchFtUser(String accessToken) {
+    private OAuthUserResponse fetchGoogleUser(String accessToken) {
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(accessToken);
 
         try {
             JsonNode me = restTemplate.exchange(
-                    meUrl, HttpMethod.GET, new HttpEntity<>(headers), JsonNode.class).getBody();
+                    userinfoUrl, HttpMethod.GET, new HttpEntity<>(headers), JsonNode.class).getBody();
 
-            if (me == null) {
-                throw new IllegalStateException("Failed to retrieve 42 user");
+            if (me == null || me.path("sub").asString(null) == null) {
+                throw new IllegalStateException("Failed to retrieve Google user");
             }
 
-            OAuthUserResponse ftUser = new OAuthUserResponse();
-            ftUser.setProviderId(String.valueOf(me.path("id").asLong()));
-            ftUser.setUsername(me.path("login").asString(null));
-            ftUser.setEmail(me.path("email").asString(null));
-            ftUser.setFirstName(me.path("first_name").asString(null));
-            ftUser.setLastName(me.path("last_name").asString(null));
-            ftUser.setPhone(me.path("phone").asString(null));
-            ftUser.setImageUrl(me.path("image").path("link").asString(null));
+            OAuthUserResponse googleUser = new OAuthUserResponse();
+            googleUser.setProviderId(me.path("sub").asString(null));
+            googleUser.setEmail(me.path("email").asString(null));
+            googleUser.setFirstName(me.path("given_name").asString(null));
+            googleUser.setLastName(me.path("family_name").asString(null));
+            googleUser.setImageUrl(me.path("picture").asString(null));
 
-            return ftUser;
+            return googleUser;
         } catch (RestClientException e) {
-            throw new IllegalStateException("Failed to retrieve 42 user", e);
+            throw new IllegalStateException("Failed to retrieve Google user", e);
         }
     }
 }

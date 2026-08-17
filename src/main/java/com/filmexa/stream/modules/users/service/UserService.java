@@ -19,11 +19,12 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import com.filmexa.stream.modules.auth.dto.FtUserResponse;
+import com.filmexa.stream.modules.auth.dto.OAuthUserResponse;
 import com.filmexa.stream.modules.auth.dto.RegisterRequest;
 import com.filmexa.stream.modules.auth.dto.ResetPasswordRequest;
 import com.filmexa.stream.modules.users.dto.UpdateProfileRequest;
 import com.filmexa.stream.modules.users.entity.User;
+import com.filmexa.stream.modules.users.enums.AuthProvider;
 import com.filmexa.stream.modules.users.enums.PreferredLanguage;
 
 @Service
@@ -59,7 +60,7 @@ public interface UserService {
 
     public Page<User> getAllUsers(Pageable pageable);
 
-    public User findOrCreateFtUser(FtUserResponse ftUser);
+    public User findOrCreateOAuthUser(AuthProvider provider, OAuthUserResponse oauthUser);
 
     public void setPassword(String username, String newPassword);
 }

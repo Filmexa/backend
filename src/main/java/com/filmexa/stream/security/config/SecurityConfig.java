@@ -52,7 +52,9 @@ public class SecurityConfig {
 			"/api/auth/reset-password",
 			"/api/auth/refresh",
 			"/api/auth/42",
-			"/api/auth/42/callback"
+			"/api/auth/42/callback",
+			"/api/auth/google",
+			"/api/auth/google/callback"
 	};
 
 	private final UserDetailsService userDetailsService;

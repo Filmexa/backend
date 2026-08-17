@@ -6,7 +6,7 @@
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/08 18:23:04 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/08/17 13:06:56 by kchaouki         ###   ########.fr       */
+/*   Updated: 2026/08/17 15:28:41 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,7 +25,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import com.filmexa.stream.modules.auth.dto.FtUserResponse;
+import com.filmexa.stream.modules.auth.dto.OAuthUserResponse;
 import com.filmexa.stream.modules.auth.dto.RegisterRequest;
 import com.filmexa.stream.modules.auth.dto.ResetPasswordRequest;
 import com.filmexa.stream.modules.notification.service.NotificationService;
@@ -303,32 +303,32 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public User findOrCreateFtUser(FtUserResponse ftUser) {
+    public User findOrCreateOAuthUser(AuthProvider provider, OAuthUserResponse oauthUser) {
         Optional<User> existingUser =
         userRepository.findByAuthProviderAndProviderId(
-                AuthProvider.INTRA,
-                String.valueOf(ftUser.getId())
+                provider,
+                oauthUser.getProviderId()
         );
 
         if (existingUser.isPresent()) {
             return existingUser.get();
         }
-        
+
         User user = new User();
+        user.setAuthProvider(provider);
+        user.setProviderId(oauthUser.getProviderId());
 
-        user = new User();
-        user.setAuthProvider(AuthProvider.INTRA);
+        String username = oauthUser.getUsername();
+        user.setUsername(username != null ? username : generateUniqueUsername(oauthUser.getEmail()));
 
-        user.setProviderId(ftUser.getId().toString());
-        user.setUsername(ftUser.getLogin());
-        user.setEmail(ftUser.getEmail());
-        user.setFirstName(ftUser.getFirstName());
-        user.setLastName(ftUser.getLastName());
-        user.setProfilePictureUrl(ftUser.getImageUrl());
+        user.setEmail(oauthUser.getEmail());
+        user.setFirstName(oauthUser.getFirstName());
+        user.setLastName(oauthUser.getLastName());
+        user.setProfilePictureUrl(oauthUser.getImageUrl());
 
-        String ftPhone = ftUser.getPhone();
-        if (ftPhone != null && ftPhone.matches("^[0-9+\\-\\s]+$")) {
-            user.setPhoneNumber(ftPhone);
+        String phone = oauthUser.getPhone();
+        if (phone != null && phone.matches("^[0-9+\\-\\s]+$")) {
+            user.setPhoneNumber(phone);
         }
 
         user.setPreferredLanguage(PreferredLanguage.ENGLISH);
@@ -337,8 +337,24 @@ public class UserServiceImpl implements UserService {
         user.setUpdatedAt(LocalDateTime.now());
         user.setCreatedAt(LocalDateTime.now());
 
-        user = userRepository.save(user);
-        return user;
+        return userRepository.save(user);
+    }
+
+    private String generateUniqueUsername(String email) {
+        String base = email != null ? email.substring(0, email.indexOf('@') >= 0 ? email.indexOf('@') : email.length()) : "user";
+        base = base.replaceAll("[^a-zA-Z0-9_-]", "");
+        if (base.length() < 3) {
+            base = (base + "user").substring(0, Math.max(3, base.length()));
+        }
+        if (base.length() > 25) {
+            base = base.substring(0, 25);
+        }
+
+        String candidate = base;
+        while (userRepository.findByUsername(candidate).isPresent()) {
+            candidate = base + RANDOM.nextInt(10_000);
+        }
+        return candidate;
     }
 
     @Override

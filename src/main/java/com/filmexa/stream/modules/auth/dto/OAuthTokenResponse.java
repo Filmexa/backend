@@ -1,12 +1,12 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   FtUserResponse.java                                :+:      :+:    :+:   */
+/*   OAuthTokenResponse.java                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/08/17 11:26:08 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/08/17 12:34:30 by kchaouki         ###   ########.fr       */
+/*   Created: 2026/08/17 15:22:23 by kchaouki          #+#    #+#             */
+/*   Updated: 2026/08/17 15:22:25 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,18 +17,19 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 @Data
-public class FtUserResponse {
-    
-    private Long id;
-    private String login;
-    private String email;
+public class OAuthTokenResponse {
 
-    private String firstName;
+    @JsonProperty("access_token")
+    private String accessToken;
 
-    private String lastName;
+    @JsonProperty("token_type")
+    private String tokenType;
 
-    @JsonProperty("image_url")
-    private String imageUrl;
+    @JsonProperty("expires_in")
+    private Long expiresIn;
 
-    private String phone;
+    @JsonProperty("id_token")
+    private String idToken;
+
+    private String scope;
 }
