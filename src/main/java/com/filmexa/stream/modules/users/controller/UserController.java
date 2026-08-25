@@ -6,7 +6,7 @@
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/08 18:24:35 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/08/16 19:48:19 by kchaouki         ###   ########.fr       */
+/*   Updated: 2026/08/24 18:10:02 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,7 +17,6 @@ import java.util.UUID;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -41,9 +40,6 @@ import com.filmexa.stream.modules.users.dto.ConfirmEmailChangeRequest;
 import com.filmexa.stream.modules.users.dto.UpdateProfileRequest;
 import com.filmexa.stream.modules.users.dto.UserProfileResponse;
 import com.filmexa.stream.modules.users.entity.User;
-import com.filmexa.stream.modules.users.enums.AuthProvider;
-import com.filmexa.stream.modules.users.enums.PreferredLanguage;
-import com.filmexa.stream.modules.users.enums.Role;
 import com.filmexa.stream.modules.users.service.AvatarService;
 import com.filmexa.stream.modules.users.service.UserService;
 
