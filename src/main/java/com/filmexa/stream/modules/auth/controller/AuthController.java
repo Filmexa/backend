@@ -6,7 +6,7 @@
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/14 15:44:40 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/08/29 14:56:26 by kchaouki         ###   ########.fr       */
+/*   Updated: 2026/08/29 19:32:54 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -138,7 +138,7 @@ public class AuthController {
         if (!verified) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid or expired verification code");
         }
-        return ResponseEntity.ok("Account verified successfully");
+        return ResponseEntity.ok().build();
     }
 
     @PostMapping("/resend-verification")
@@ -165,7 +165,7 @@ public class AuthController {
         if (!reset) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid or expired reset code");
         }
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok("Password reset successfully");
     }
 
     @PostMapping("/refresh")
