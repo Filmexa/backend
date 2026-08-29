@@ -6,7 +6,7 @@
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/14 15:44:40 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/08/17 15:26:40 by kchaouki         ###   ########.fr       */
+/*   Updated: 2026/08/29 14:56:26 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -144,19 +144,19 @@ public class AuthController {
     @PostMapping("/resend-verification")
     public ResponseEntity<?> resendVerification(@Valid @RequestBody ForgotPasswordRequest request) {
         userService.resendVerificationCode(request.getEmail());
-        return ResponseEntity.ok("If an account with that email exists and is not verified, a new verification code has been sent.");
+        return ResponseEntity.ok().build();
     }
 
     @PostMapping("/forgot-password")
     public ResponseEntity<?> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
         userService.requestPasswordReset(request.getEmail());
-        return ResponseEntity.ok("If an account with that email exists, a password reset code has been sent.");
+        return ResponseEntity.ok().build();
     }
 
     @PostMapping("/resend-password-reset")
     public ResponseEntity<?> resendPasswordReset(@Valid @RequestBody ForgotPasswordRequest request) {
         userService.resendPasswordResetCode(request.getEmail());
-        return ResponseEntity.ok("If an account with that email exists, a new password reset code has been sent.");
+        return ResponseEntity.ok().build();
     }
 
     @PostMapping("/reset-password")
@@ -165,7 +165,7 @@ public class AuthController {
         if (!reset) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid or expired reset code");
         }
-        return ResponseEntity.ok("Password reset successfully");
+        return ResponseEntity.ok().build();
     }
 
     @PostMapping("/refresh")
