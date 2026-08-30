@@ -15,10 +15,13 @@ import com.filmexa.stream.AbstractIntegrationTest;
 import com.filmexa.stream.modules.notification.service.NotificationService;
 import com.filmexa.stream.modules.users.entity.User;
 
+import jakarta.servlet.http.Cookie;
+
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -68,19 +71,19 @@ class AuthFlowIntegrationTest extends AbstractIntegrationTest {
                                 """.formatted(email, code)))
                 .andExpect(status().isOk());
 
-        String loginResponse = mockMvc.perform(post("/api/auth/login")
+        MockHttpServletResponse loginResult = mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"username":"%s","password":"Passw0rd!"}
                                 """.formatted(username)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken", notNullValue()))
-                .andExpect(jsonPath("$.refreshToken", notNullValue()))
-                .andReturn().getResponse().getContentAsString();
+                .andReturn().getResponse();
 
-        var authResponse = objectMapper.readTree(loginResponse);
+        var authResponse = objectMapper.readTree(loginResult.getContentAsString());
         String accessToken = authResponse.get("accessToken").asText();
-        String refreshToken = authResponse.get("refreshToken").asText();
+        Cookie refreshCookie = loginResult.getCookie("filmexa_token");
+        assertThat(refreshCookie).isNotNull();
 
         mockMvc.perform(get("/api/users/me/profile")
                         .header("Authorization", "Bearer " + accessToken))
@@ -88,10 +91,7 @@ class AuthFlowIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.username").value(username));
 
         mockMvc.perform(post("/api/auth/refresh")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"refreshToken":"%s"}
-                                """.formatted(refreshToken)))
+                        .cookie(refreshCookie))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken", notNullValue()));
     }
