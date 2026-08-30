@@ -6,7 +6,7 @@
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/14 15:44:40 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/08/30 13:24:40 by kchaouki         ###   ########.fr       */
+/*   Updated: 2026/08/30 16:33:30 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,6 +31,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.filmexa.stream.common.utils.ErrorResponse;
 import com.filmexa.stream.modules.auth.dto.AuthRequest;
 import com.filmexa.stream.modules.auth.dto.AuthResponse;
 import com.filmexa.stream.modules.auth.dto.ForgotPasswordRequest;
@@ -81,7 +82,8 @@ public class AuthController {
         User existingUser = userService.findByUsername(authRequest.getUsername()).orElse(null);
         if (existingUser != null && existingUser.getHashedPassword() == null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body("This account has no password set. Log in with 42 or set a password first.");
+                    .body(new ErrorResponse(HttpStatus.BAD_REQUEST.value(),
+                            "This account has no password set. Log in with 42 or set a password first."));
         }
 
         try {
@@ -100,9 +102,11 @@ public class AuthController {
             return ResponseEntity.ok(authResponse);
 
         } catch (DisabledException e) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Account not verified. Please check your email.");
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(new ErrorResponse(HttpStatus.FORBIDDEN.value(), "Account not verified. Please check your email."));
         } catch (BadCredentialsException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new ErrorResponse(HttpStatus.UNAUTHORIZED.value(), e.getMessage()));
         }
     }
 
@@ -112,7 +116,8 @@ public class AuthController {
             String username = SecurityContextHolder.getContext().getAuthentication().getName();
             userService.logout(username);
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Logout failed");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Logout failed"));
         }
         refreshTokenCookieService.clearCookie(response);
         return ResponseEntity.ok("Logged out successfully");
@@ -132,7 +137,8 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body("Registration successful. Please check your email for the verification code.");
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(new ErrorResponse(HttpStatus.CONFLICT.value(), e.getMessage()));
         }
     }
 
@@ -140,7 +146,8 @@ public class AuthController {
     public ResponseEntity<?> verify(@Valid @RequestBody VerifyEmailRequest request) {
         boolean verified = userService.verifyEmail(request.getEmail(), request.getCode());
         if (!verified) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid or expired verification code");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ErrorResponse(HttpStatus.BAD_REQUEST.value(), "Invalid or expired verification code"));
         }
         return ResponseEntity.ok().build();
     }
@@ -167,7 +174,8 @@ public class AuthController {
     public ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
         boolean reset = userService.resetPassword(request);
         if (!reset) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid or expired reset code");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ErrorResponse(HttpStatus.BAD_REQUEST.value(), "Invalid or expired reset code"));
         }
         return ResponseEntity.ok("Password reset successfully");
     }
@@ -180,7 +188,7 @@ public class AuthController {
         if (refreshToken == null || !jwtService.validateRefreshToken(refreshToken)) {
             return ResponseEntity
                     .status(HttpStatus.UNAUTHORIZED)
-                    .body("Invalid or expired refresh token");
+                    .body(new ErrorResponse(HttpStatus.UNAUTHORIZED.value(), "Invalid or expired refresh token"));
         }
 
         String username = jwtService.extractUsername(refreshToken);
@@ -190,13 +198,13 @@ public class AuthController {
         if (user == null) {
             return ResponseEntity
                     .status(HttpStatus.UNAUTHORIZED)
-                    .body("User not found");
+                    .body(new ErrorResponse(HttpStatus.UNAUTHORIZED.value(), "User not found"));
         }
 
         if (!refreshToken.equals(user.getRefreshToken())) {
             return ResponseEntity
                     .status(HttpStatus.UNAUTHORIZED)
-                    .body("Invalid or expired refresh token");
+                    .body(new ErrorResponse(HttpStatus.UNAUTHORIZED.value(), "Invalid or expired refresh token"));
         }
 
         String newAccessToken = jwtService.generateToken(user);
@@ -237,7 +245,8 @@ public class AuthController {
             authResponse.setAccessToken(accessToken);
             return ResponseEntity.ok(authResponse);
         } catch (IllegalStateException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ErrorResponse(HttpStatus.BAD_REQUEST.value(), e.getMessage()));
         }
     }
 
@@ -267,7 +276,8 @@ public class AuthController {
             authResponse.setAccessToken(accessToken);
             return ResponseEntity.ok(authResponse);
         } catch (IllegalStateException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ErrorResponse(HttpStatus.BAD_REQUEST.value(), e.getMessage()));
         }
     }
 }

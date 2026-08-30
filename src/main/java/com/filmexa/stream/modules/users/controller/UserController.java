@@ -6,7 +6,7 @@
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/08 18:24:35 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/08/24 18:10:02 by kchaouki         ###   ########.fr       */
+/*   Updated: 2026/08/30 16:55:10 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,6 +33,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import org.springframework.web.bind.annotation.RestController;
 
+import com.filmexa.stream.common.utils.ErrorResponse;
 import com.filmexa.stream.modules.users.dto.AvatarFile;
 import com.filmexa.stream.modules.users.dto.ChangeEmailRequest;
 import com.filmexa.stream.modules.users.dto.ChangePreferredLanguageRequest;
@@ -80,7 +81,8 @@ public class UserController {
         try {
             userService.requestEmailChange(username, request.getNewEmail());
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(new ErrorResponse(HttpStatus.CONFLICT.value(), e.getMessage()));
         }
 
         return ResponseEntity.ok("Please check your new email for a confirmation code.");
@@ -92,7 +94,8 @@ public class UserController {
 
         boolean confirmed = userService.confirmEmailChange(username, request.getCode());
         if (!confirmed) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid or expired confirmation code");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ErrorResponse(HttpStatus.BAD_REQUEST.value(), "Invalid or expired confirmation code"));
         }
 
         return ResponseEntity.ok("Email changed successfully");
@@ -115,7 +118,8 @@ public class UserController {
         try {
             avatarService.saveAvatar(user.getId(), file);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ErrorResponse(HttpStatus.BAD_REQUEST.value(), e.getMessage()));
         }
 
         return ResponseEntity.ok("Avatar updated successfully");
@@ -158,13 +162,9 @@ public class UserController {
     @GetMapping("/me/profile")
     public ResponseEntity<UserProfileResponse> getMyProfile() {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        try {
-            User user = userService.findByUsername(username)
-                    .orElseThrow(() -> new NoSuchElementException("User not found"));
-            return ResponseEntity.ok(toProfileResponse(user));
-        } catch (NoSuchElementException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
-        }
+        User user = userService.findByUsername(username)
+                .orElseThrow(() -> new NoSuchElementException("User not found"));
+        return ResponseEntity.ok(toProfileResponse(user));
     }
 
     @PatchMapping("/me/profile")
@@ -175,7 +175,8 @@ public class UserController {
             User updated = userService.updateProfile(username, request);
             return ResponseEntity.ok(toProfileResponse(updated));
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(new ErrorResponse(HttpStatus.CONFLICT.value(), e.getMessage()));
         }
     }
 
