@@ -6,11 +6,11 @@
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/30 11:09:53 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/08/30 11:13:52 by kchaouki         ###   ########.fr       */
+/*   Updated: 2026/08/30 12:15:55 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-package com.filmexa.stream.common.utils;
+package com.filmexa.stream.common.exception;
 
 import java.util.HashMap;
 import java.util.Map;
