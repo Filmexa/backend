@@ -6,7 +6,7 @@
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/14 15:44:40 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/08/29 19:32:54 by kchaouki         ###   ########.fr       */
+/*   Updated: 2026/08/30 13:24:40 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,12 +35,12 @@ import com.filmexa.stream.modules.auth.dto.AuthRequest;
 import com.filmexa.stream.modules.auth.dto.AuthResponse;
 import com.filmexa.stream.modules.auth.dto.ForgotPasswordRequest;
 import com.filmexa.stream.modules.auth.dto.OAuthUserResponse;
-import com.filmexa.stream.modules.auth.dto.RefreshTokenRequest;
 import com.filmexa.stream.modules.auth.dto.RegisterRequest;
 import com.filmexa.stream.modules.auth.dto.ResetPasswordRequest;
 import com.filmexa.stream.modules.auth.dto.SetPasswordRequest;
 import com.filmexa.stream.modules.auth.dto.VerifyEmailRequest;
 import com.filmexa.stream.modules.auth.service.ProviderAuthService;
+import com.filmexa.stream.modules.auth.service.RefreshTokenCookieService;
 import com.filmexa.stream.modules.users.entity.User;
 import com.filmexa.stream.modules.users.enums.AuthProvider;
 import com.filmexa.stream.modules.users.service.UserService;
@@ -61,19 +61,22 @@ public class AuthController {
     private final JwtService jwtService;
     private final ProviderAuthService ftOAuthService;
     private final ProviderAuthService googleOAuthService;
+    private final RefreshTokenCookieService refreshTokenCookieService;
 
     public AuthController(AuthenticationManager authenticationManager, UserService userService, JwtService jwtService,
             @Qualifier("ftOAuthServiceImpl") ProviderAuthService ftOAuthService,
-            @Qualifier("googleOAuthServiceImpl") ProviderAuthService googleOAuthService) {
+            @Qualifier("googleOAuthServiceImpl") ProviderAuthService googleOAuthService,
+            RefreshTokenCookieService refreshTokenCookieService) {
         this.authenticationManager = authenticationManager;
         this.userService = userService;
         this.jwtService = jwtService;
         this.ftOAuthService = ftOAuthService;
         this.googleOAuthService = googleOAuthService;
+        this.refreshTokenCookieService = refreshTokenCookieService;
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@Valid @RequestBody AuthRequest authRequest) {
+    public ResponseEntity<?> login(@Valid @RequestBody AuthRequest authRequest, HttpServletResponse response) {
 
         User existingUser = userService.findByUsername(authRequest.getUsername()).orElse(null);
         if (existingUser != null && existingUser.getHashedPassword() == null) {
@@ -89,11 +92,11 @@ public class AuthController {
             String accessToken = jwtService.generateToken(user);
             String refreshToken = jwtService.generateRefreshToken(user);
             userService.saveRefreshToken(user.getUsername(), refreshToken);
+            refreshTokenCookieService.addCookie(response, refreshToken);
 
             AuthResponse authResponse = new AuthResponse();
             authResponse.setEmail(user.getEmail());
             authResponse.setAccessToken(accessToken);
-            authResponse.setRefreshToken(refreshToken);
             return ResponseEntity.ok(authResponse);
 
         } catch (DisabledException e) {
@@ -104,13 +107,14 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<?> logout() {
+    public ResponseEntity<?> logout(HttpServletResponse response) {
         try {
             String username = SecurityContextHolder.getContext().getAuthentication().getName();
             userService.logout(username);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Logout failed");
         }
+        refreshTokenCookieService.clearCookie(response);
         return ResponseEntity.ok("Logged out successfully");
     }
 
@@ -169,16 +173,15 @@ public class AuthController {
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<?> refresh(@RequestBody RefreshTokenRequest request) {
+    public ResponseEntity<?> refresh(HttpServletRequest request, HttpServletResponse response) {
 
-        String refreshToken = request.getRefreshToken();
+        String refreshToken = refreshTokenCookieService.extractToken(request);
 
-        if (!jwtService.validateRefreshToken(refreshToken)) {
+        if (refreshToken == null || !jwtService.validateRefreshToken(refreshToken)) {
             return ResponseEntity
                     .status(HttpStatus.UNAUTHORIZED)
                     .body("Invalid or expired refresh token");
         }
-
 
         String username = jwtService.extractUsername(refreshToken);
 
@@ -197,13 +200,15 @@ public class AuthController {
         }
 
         String newAccessToken = jwtService.generateToken(user);
+        String newRefreshToken = jwtService.generateRefreshToken(user);
+        userService.saveRefreshToken(user.getUsername(), newRefreshToken);
+        refreshTokenCookieService.addCookie(response, newRefreshToken);
 
-        AuthResponse response = new AuthResponse();
-        response.setEmail(user.getEmail());
-        response.setAccessToken(newAccessToken);
-        response.setRefreshToken(refreshToken);
+        AuthResponse authResponse = new AuthResponse();
+        authResponse.setEmail(user.getEmail());
+        authResponse.setAccessToken(newAccessToken);
 
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(authResponse);
     }
 
     @GetMapping("/42")
@@ -225,11 +230,11 @@ public class AuthController {
             String accessToken = jwtService.generateToken(user);
             String refreshToken = jwtService.generateRefreshToken(user);
             userService.saveRefreshToken(user.getUsername(), refreshToken);
+            refreshTokenCookieService.addCookie(response, refreshToken);
 
             AuthResponse authResponse = new AuthResponse();
             authResponse.setEmail(user.getEmail());
             authResponse.setAccessToken(accessToken);
-            authResponse.setRefreshToken(refreshToken);
             return ResponseEntity.ok(authResponse);
         } catch (IllegalStateException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
@@ -255,11 +260,11 @@ public class AuthController {
             String accessToken = jwtService.generateToken(user);
             String refreshToken = jwtService.generateRefreshToken(user);
             userService.saveRefreshToken(user.getUsername(), refreshToken);
+            refreshTokenCookieService.addCookie(response, refreshToken);
 
             AuthResponse authResponse = new AuthResponse();
             authResponse.setEmail(user.getEmail());
             authResponse.setAccessToken(accessToken);
-            authResponse.setRefreshToken(refreshToken);
             return ResponseEntity.ok(authResponse);
         } catch (IllegalStateException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
