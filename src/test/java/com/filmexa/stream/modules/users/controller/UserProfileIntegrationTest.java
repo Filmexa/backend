@@ -92,7 +92,7 @@ class UserProfileIntegrationTest extends AbstractIntegrationTest {
                 .andReturn().getResponse().getContentAsString();
         String userId = objectMapper.readTree(meJson).get("id").asText();
 
-        mockMvc.perform(get("/api/users/" + userId + "/profile")
+        mockMvc.perform(get("/api/users/" + userId)
                         .header("Authorization", "Bearer " + user.accessToken()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.username").value("profileuser3"));
@@ -103,7 +103,7 @@ class UserProfileIntegrationTest extends AbstractIntegrationTest {
         registerUser("profileuser4");
         RegisteredUser user = registerUser("profileuser5");
 
-        mockMvc.perform(get("/api/users/profiles")
+        mockMvc.perform(get("/api/users/")
                         .header("Authorization", "Bearer " + user.accessToken())
                         .param("page", "0").param("size", "20"))
                 .andExpect(status().isOk())
