@@ -6,7 +6,7 @@
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/08 18:23:04 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/08/31 11:03:20 by kchaouki         ###   ########.fr       */
+/*   Updated: 2026/08/31 22:30:13 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -280,6 +280,11 @@ public class UserServiceImpl implements UserService {
     @Override
     public Page<User> getAllUsers(Pageable pageable) {
         return userRepository.findAll(pageable);
+    }
+
+    @Override
+    public Page<User> getAllUsers(Pageable pageable, UUID excludeUserId) {
+        return userRepository.findAllByIdNot(excludeUserId, pageable);
     }
 
     private boolean isValid(UserVerificationToken token, String code) {

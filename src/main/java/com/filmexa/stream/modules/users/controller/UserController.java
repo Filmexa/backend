@@ -6,7 +6,7 @@
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/08 18:24:35 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/08/31 22:09:49 by kchaouki         ###   ########.fr       */
+/*   Updated: 2026/08/31 22:30:03 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -62,7 +62,8 @@ public class UserController {
     public ResponseEntity<Page<UserInfosSimpleResponse>> getAllProfiles(
 			@RequestParam(defaultValue = "0") int page,
 			@RequestParam(defaultValue = "20") int size) {
-        Page<UserInfosSimpleResponse> profiles = userService.getAllUsers(PageRequest.of(page, size))
+        User currentUser = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Page<UserInfosSimpleResponse> profiles = userService.getAllUsers(PageRequest.of(page, size), currentUser.getId())
                 .map(this::toUserInfosSimpleResponse);
         return ResponseEntity.ok(profiles);
     }
