@@ -6,7 +6,7 @@
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/14 15:44:40 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/08/31 11:07:21 by kchaouki         ###   ########.fr       */
+/*   Updated: 2026/08/31 11:50:03 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -126,6 +126,17 @@ public class AuthController {
     @PutMapping("/set-password")
     public ResponseEntity<?> setPassword(@Valid @RequestBody SetPasswordRequest request) {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userService.findByUsername(username).orElse(null);
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ErrorResponse(HttpStatus.NOT_FOUND.value(), "User not found"));
+        }
+
+        if (user.getHashedPassword() != null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ErrorResponse(HttpStatus.BAD_REQUEST.value(), "Password is already set"));
+        }
+
         userService.setPassword(username, request.getPassword());
         return ResponseEntity.ok("Password set successfully");
     }

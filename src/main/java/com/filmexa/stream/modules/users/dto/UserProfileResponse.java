@@ -6,7 +6,7 @@
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/16 19:20:00 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/08/30 18:55:43 by kchaouki         ###   ########.fr       */
+/*   Updated: 2026/08/31 11:57:19 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,6 +30,8 @@ public class UserProfileResponse {
     private String firstName;
 
     private String lastName;
+
+    private String email;
 
     private String phoneNumber;
 
