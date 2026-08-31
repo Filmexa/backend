@@ -6,7 +6,7 @@
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/14 15:44:40 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/08/30 16:33:30 by kchaouki         ###   ########.fr       */
+/*   Updated: 2026/08/31 11:07:21 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -154,24 +154,46 @@ public class AuthController {
 
     @PostMapping("/resend-verification")
     public ResponseEntity<?> resendVerification(@Valid @RequestBody ForgotPasswordRequest request) {
+        User user = userService.findByEmail(request.getEmail()).orElse(null);
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ErrorResponse(HttpStatus.NOT_FOUND.value(), "User with this email not found"));
+        }
         userService.resendVerificationCode(request.getEmail());
         return ResponseEntity.ok().build();
     }
 
     @PostMapping("/forgot-password")
     public ResponseEntity<?> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        User user = userService.findByEmail(request.getEmail()).orElse(null);
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ErrorResponse(HttpStatus.NOT_FOUND.value(), "User with this email not found"));
+        }
+
         userService.requestPasswordReset(request.getEmail());
         return ResponseEntity.ok().build();
     }
 
     @PostMapping("/resend-password-reset")
     public ResponseEntity<?> resendPasswordReset(@Valid @RequestBody ForgotPasswordRequest request) {
+        User user = userService.findByEmail(request.getEmail()).orElse(null);
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ErrorResponse(HttpStatus.NOT_FOUND.value(), "User with this email not found"));
+        }
         userService.resendPasswordResetCode(request.getEmail());
         return ResponseEntity.ok().build();
     }
 
     @PostMapping("/reset-password")
     public ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        User user = userService.findByEmail(request.getEmail()).orElse(null);
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ErrorResponse(HttpStatus.NOT_FOUND.value(), "User with this email not found"));
+        }
+
         boolean reset = userService.resetPassword(request);
         if (!reset) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)

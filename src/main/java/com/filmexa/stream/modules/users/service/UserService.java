@@ -6,7 +6,7 @@
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/08 18:23:06 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/08/17 13:06:53 by kchaouki         ###   ########.fr       */
+/*   Updated: 2026/08/31 11:03:08 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,6 +33,8 @@ public interface UserService {
     public Optional<User> findById(UUID userId);
 
     public Optional<User> findByUsername(String username);
+
+    public Optional<User> findByEmail(String email);
 
     public User registerUser(RegisterRequest user);
 
