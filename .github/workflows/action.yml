@@ -106,7 +106,7 @@ jobs:
         run: |
         
           docker buildx build \
-            --platform linux/amd64\
+            --platform linux/amd64 \
             -t ${{ secrets.DOCKERUSER }}/filmexa-backend:latest \
             -t ${{ secrets.DOCKERUSER }}/filmexa-backend:${{ github.sha }} \
             --push .
@@ -173,8 +173,8 @@ jobs:
             POSTGRES_DB= filmexa_test
             POSTGRES_USER= ${{ secrets.SPRING_DATASOURCE_USERNAME }}
             POSTGRES_PASSWORD= ${{ secrets.SPRING_DATASOURCE_PASSWORD }}
-            APP_COOKIE_SECURE= ${{ secrests.APP_COOKIE_SECURE }}
-            APP_COOKIE_NAME= ${{ secrests.APP_COOKIE_NAME }}
+            APP_COOKIE_SECURE= ${{ secrets.APP_COOKIE_SECURE }}
+            APP_COOKIE_NAME= ${{ secrets.APP_COOKIE_NAME }}
             EOF
             docker compose pull
             docker compose up -d --remove-orphans
