@@ -74,8 +74,8 @@ jobs:
           IMG_STORAGE_PATH: ${{ secrets.IMG_STORAGE_PATH }}
           VIDEO_STORAGE_PATH: ${{ secrets.VIDEO_STORAGE_PATH }}
           SUBTITLE_STORAGE_PATH: ${{ secrets.SUBTITLE_STORAGE_PATH }}
-          APP_COOKIE_NAME: ${{ secrests.APP_COOKIE_NAME }}
-          APP_COOKIE_SECURE: ${{ secrests.APP_COOKIE_SECURE }}
+          APP_COOKIE_NAME: ${{ secrets.APP_COOKIE_NAME }}
+          APP_COOKIE_SECURE: ${{ secrets.APP_COOKIE_SECURE }}
   build:
     name: Build and Push Docker Image
     needs: test
