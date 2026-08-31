@@ -1,0 +1,32 @@
+
+services:
+
+  postgres:
+    image: postgres:15
+    container_name: filmexa-postgres
+    restart: always
+    env_file:
+      - ./.env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - filmexa-net
+  
+  backend:
+    image: mbaanni/filmexa-backend:latest
+    container_name: filmexa-backend
+    restart: always
+    ports:
+      - "8080:8080"
+    env_file:
+      - ./.env
+    depends_on:
+      - postgres
+    networks:
+      - filmexa-net
+volumes:
+  postgres_data:
+
+networks:
+  filmexa-net:
+    driver: bridge
