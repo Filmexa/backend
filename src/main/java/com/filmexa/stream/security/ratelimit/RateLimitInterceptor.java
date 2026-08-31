@@ -6,12 +6,13 @@
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/31 17:59:14 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/08/31 18:36:54 by kchaouki         ###   ########.fr       */
+/*   Updated: 2026/08/31 18:48:35 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 package com.filmexa.stream.security.ratelimit;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -32,9 +33,12 @@ public class RateLimitInterceptor implements HandlerInterceptor {
     private final RateLimiterService rateLimiterService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    @Value("${app.rate-limit.enabled:true}")
+    private boolean rateLimitEnabled;
+
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-        if (!(handler instanceof HandlerMethod handlerMethod)) {
+        if (!rateLimitEnabled || !(handler instanceof HandlerMethod handlerMethod)) {
             return true;
         }
 
