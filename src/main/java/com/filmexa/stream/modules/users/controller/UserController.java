@@ -6,7 +6,7 @@
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/08 18:24:35 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/08/31 16:38:12 by kchaouki         ###   ########.fr       */
+/*   Updated: 2026/08/31 22:09:49 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -195,7 +195,8 @@ public class UserController {
                 user.getEmail(),
                 user.getPhoneNumber(),
                 avatarUrl,
-                user.getPreferredLanguage()
+                user.getPreferredLanguage(),
+                user.getCreatedAt()
         );
     }
 

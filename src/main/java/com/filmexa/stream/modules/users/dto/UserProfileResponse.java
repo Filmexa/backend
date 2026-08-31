@@ -6,12 +6,13 @@
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/16 19:20:00 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/08/31 11:57:19 by kchaouki         ###   ########.fr       */
+/*   Updated: 2026/08/31 22:09:36 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 package com.filmexa.stream.modules.users.dto;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 import com.filmexa.stream.modules.users.enums.PreferredLanguage;
@@ -38,4 +39,6 @@ public class UserProfileResponse {
     private String avatarUrl;
 
     private PreferredLanguage preferredLanguage;
+
+    private LocalDateTime createdAt;
 }
