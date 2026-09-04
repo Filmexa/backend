@@ -6,7 +6,7 @@
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/14 15:44:40 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/08/31 11:50:03 by kchaouki         ###   ########.fr       */
+/*   Updated: 2026/08/31 17:58:29 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -45,6 +45,7 @@ import com.filmexa.stream.modules.auth.service.RefreshTokenCookieService;
 import com.filmexa.stream.modules.users.entity.User;
 import com.filmexa.stream.modules.users.enums.AuthProvider;
 import com.filmexa.stream.modules.users.service.UserService;
+import com.filmexa.stream.security.ratelimit.RateLimit;
 import com.filmexa.stream.security.service.JwtService;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -76,6 +77,7 @@ public class AuthController {
         this.refreshTokenCookieService = refreshTokenCookieService;
     }
 
+    @RateLimit(limit = 10, windowSeconds = 60)
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody AuthRequest authRequest, HttpServletResponse response) {
 
@@ -141,6 +143,7 @@ public class AuthController {
         return ResponseEntity.ok("Password set successfully");
     }
 
+    @RateLimit(limit = 10, windowSeconds = 60)
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request) {
         try {
@@ -153,6 +156,7 @@ public class AuthController {
         }
     }
 
+    @RateLimit
     @PostMapping("/verify")
     public ResponseEntity<?> verify(@Valid @RequestBody VerifyEmailRequest request) {
         boolean verified = userService.verifyEmail(request.getEmail(), request.getCode());
@@ -163,6 +167,7 @@ public class AuthController {
         return ResponseEntity.ok().build();
     }
 
+    @RateLimit
     @PostMapping("/resend-verification")
     public ResponseEntity<?> resendVerification(@Valid @RequestBody ForgotPasswordRequest request) {
         User user = userService.findByEmail(request.getEmail()).orElse(null);
@@ -174,6 +179,7 @@ public class AuthController {
         return ResponseEntity.ok().build();
     }
 
+    @RateLimit
     @PostMapping("/forgot-password")
     public ResponseEntity<?> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
         User user = userService.findByEmail(request.getEmail()).orElse(null);
@@ -186,6 +192,7 @@ public class AuthController {
         return ResponseEntity.ok().build();
     }
 
+    @RateLimit
     @PostMapping("/resend-password-reset")
     public ResponseEntity<?> resendPasswordReset(@Valid @RequestBody ForgotPasswordRequest request) {
         User user = userService.findByEmail(request.getEmail()).orElse(null);
@@ -197,6 +204,7 @@ public class AuthController {
         return ResponseEntity.ok().build();
     }
 
+    @RateLimit
     @PostMapping("/reset-password")
     public ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
         User user = userService.findByEmail(request.getEmail()).orElse(null);

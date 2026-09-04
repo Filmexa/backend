@@ -6,7 +6,7 @@
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/08 18:24:35 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/08/31 11:57:37 by kchaouki         ###   ########.fr       */
+/*   Updated: 2026/08/31 22:30:03 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,6 +39,8 @@ import com.filmexa.stream.modules.users.dto.ChangeEmailRequest;
 import com.filmexa.stream.modules.users.dto.ChangePreferredLanguageRequest;
 import com.filmexa.stream.modules.users.dto.ConfirmEmailChangeRequest;
 import com.filmexa.stream.modules.users.dto.UpdateProfileRequest;
+import com.filmexa.stream.modules.users.dto.UserInfosResponse;
+import com.filmexa.stream.modules.users.dto.UserInfosSimpleResponse;
 import com.filmexa.stream.modules.users.dto.UserProfileResponse;
 import com.filmexa.stream.modules.users.entity.User;
 import com.filmexa.stream.modules.users.service.AvatarService;
@@ -55,6 +57,44 @@ import lombok.RequiredArgsConstructor;
 public class UserController {
     private final UserService userService;
     private final AvatarService avatarService;
+
+    @GetMapping("/")
+    public ResponseEntity<Page<UserInfosSimpleResponse>> getAllProfiles(
+			@RequestParam(defaultValue = "0") int page,
+			@RequestParam(defaultValue = "20") int size) {
+        User currentUser = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Page<UserInfosSimpleResponse> profiles = userService.getAllUsers(PageRequest.of(page, size), currentUser.getId())
+                .map(this::toUserInfosSimpleResponse);
+        return ResponseEntity.ok(profiles);
+    }
+
+    @GetMapping("/{userId}")
+    public ResponseEntity<UserInfosResponse> getUserProfile(@PathVariable UUID userId) {
+        User user = userService.findById(userId)
+                .orElseThrow(() -> new NoSuchElementException("User not found"));
+        return ResponseEntity.ok(toUserInfosResponse(user));
+    }
+
+    @GetMapping("/me/profile")
+    public ResponseEntity<UserProfileResponse> getMyProfile() {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userService.findByUsername(username)
+                .orElseThrow(() -> new NoSuchElementException("User not found"));
+        return ResponseEntity.ok(toProfileResponse(user));
+    }
+
+    @PatchMapping("/me/profile")
+    public ResponseEntity<?> updateMyProfile(@Valid @RequestBody UpdateProfileRequest request) {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        try {
+            User updated = userService.updateProfile(username, request);
+            return ResponseEntity.ok(toProfileResponse(updated));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(new ErrorResponse(HttpStatus.CONFLICT.value(), e.getMessage()));
+        }
+    }
 
     @PostMapping("/change-preferred-language")
     public ResponseEntity<?>  changePreferredLanguage(@RequestBody ChangePreferredLanguageRequest request) {
@@ -143,43 +183,6 @@ public class UserController {
         }
     }
 
-    @GetMapping("/profiles")
-    public ResponseEntity<Page<UserProfileResponse>> getAllProfiles(
-			@RequestParam(defaultValue = "0") int page,
-			@RequestParam(defaultValue = "20") int size) {
-        Page<UserProfileResponse> profiles = userService.getAllUsers(PageRequest.of(page, size))
-                .map(this::toProfileResponse);
-        return ResponseEntity.ok(profiles);
-    }
-
-    @GetMapping("/{userId}/profile")
-    public ResponseEntity<UserProfileResponse> getUserProfile(@PathVariable UUID userId) {
-        User user = userService.findById(userId)
-                .orElseThrow(() -> new NoSuchElementException("User not found"));
-        return ResponseEntity.ok(toProfileResponse(user));
-    }
-
-    @GetMapping("/me/profile")
-    public ResponseEntity<UserProfileResponse> getMyProfile() {
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        User user = userService.findByUsername(username)
-                .orElseThrow(() -> new NoSuchElementException("User not found"));
-        return ResponseEntity.ok(toProfileResponse(user));
-    }
-
-    @PatchMapping("/me/profile")
-    public ResponseEntity<?> updateMyProfile(@Valid @RequestBody UpdateProfileRequest request) {
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-
-        try {
-            User updated = userService.updateProfile(username, request);
-            return ResponseEntity.ok(toProfileResponse(updated));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body(new ErrorResponse(HttpStatus.CONFLICT.value(), e.getMessage()));
-        }
-    }
-
     private UserProfileResponse toProfileResponse(User user) {
         String avatarUrl = user.getProfilePictureUrl() != null
                 ? "/api/users/" + user.getId() + "/avatar"
@@ -193,7 +196,29 @@ public class UserController {
                 user.getEmail(),
                 user.getPhoneNumber(),
                 avatarUrl,
-                user.getPreferredLanguage()
+                user.getPreferredLanguage(),
+                user.getCreatedAt()
+        );
+    }
+
+    private UserInfosResponse toUserInfosResponse(User user) {
+        String avatarUrl = user.getProfilePictureUrl() != null
+                ? "/api/users/" + user.getId() + "/avatar"
+                : null;
+
+        return new UserInfosResponse(
+                user.getId(),
+                user.getUsername(),
+                user.getFirstName(),
+                user.getLastName(),
+                avatarUrl
+        );
+    }
+
+    private UserInfosSimpleResponse toUserInfosSimpleResponse(User user) {
+        return new UserInfosSimpleResponse(
+                user.getId(),
+                user.getUsername()
         );
     }
 }

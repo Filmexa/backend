@@ -6,7 +6,7 @@
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/08 18:23:06 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/08/31 11:03:08 by kchaouki         ###   ########.fr       */
+/*   Updated: 2026/08/31 22:30:10 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -61,6 +61,8 @@ public interface UserService {
     public User updateProfile(String username, UpdateProfileRequest request);
 
     public Page<User> getAllUsers(Pageable pageable);
+
+    public Page<User> getAllUsers(Pageable pageable, UUID excludeUserId);
 
     public User findOrCreateOAuthUser(AuthProvider provider, OAuthUserResponse oauthUser);
 
