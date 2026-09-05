@@ -19,7 +19,7 @@ jobs:
       postgres:
         image: postgres:15
         env:
-          POSTGRES_DB: filmexa_test
+          POSTGRES_DB: ${{ secrets.SPRING_POSTGRES_TABLE }}
           POSTGRES_USER: ${{ secrets.SPRING_DATASOURCE_USERNAME }}
           POSTGRES_PASSWORD: ${{ secrets.SPRING_DATASOURCE_PASSWORD }}
         ports:
@@ -48,7 +48,7 @@ jobs:
           chmod +x mvnw
           ./mvnw clean verify
         env:
-          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/filmexa_test
+          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/${{ secrets.SPRING_POSTGRES_TABLE }}
           SPRING_DATASOURCE_USERNAME: ${{ secrets.SPRING_DATASOURCE_USERNAME }}
           SPRING_DATASOURCE_PASSWORD: ${{ secrets.SPRING_DATASOURCE_PASSWORD }}
           SECURITY_JWT_SECRET_KEY: ${{ secrets.SECURITY_JWT_SECRET_KEY }}
@@ -168,7 +168,7 @@ jobs:
             IMG_STORAGE_PATH= ${{ secrets.IMG_STORAGE_PATH }}
             VIDEO_STORAGE_PATH= ${{ secrets.VIDEO_STORAGE_PATH }}
             SUBTITLE_STORAGE_PATH= ${{ secrets.SUBTITLE_STORAGE_PATH }}
-            POSTGRES_DB= filmexa_test
+            POSTGRES_DB= ${{ secrets.SPRING_POSTGRES_TABLE }}
             POSTGRES_USER= ${{ secrets.SPRING_DATASOURCE_USERNAME }}
             POSTGRES_PASSWORD= ${{ secrets.SPRING_DATASOURCE_PASSWORD }}
             APP_COOKIE_SECURE= ${{ secrets.APP_COOKIE_SECURE }}
