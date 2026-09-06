@@ -19,9 +19,9 @@ jobs:
       postgres:
         image: postgres:15
         env:
-          POSTGRES_DB: ${{ secrets.SPRING_POSTGRES_TABLE }}
-          POSTGRES_USER: ${{ secrets.SPRING_DATASOURCE_USERNAME }}
-          POSTGRES_PASSWORD: ${{ secrets.SPRING_DATASOURCE_PASSWORD }}
+          POSTGRES_DB: ${{ secrets.POSTGRES_TEST }}
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
         ports:
           - 5432:5432
         options: >-
@@ -48,7 +48,7 @@ jobs:
           chmod +x mvnw
           ./mvnw clean verify
         env:
-          SPRING_DATASOURCE_URL: ${{ secrets.SPRING_DATASOURCE_URL }}
+          SPRING_DATASOURCE_URL: ${{ secrets.SPRING_DATASOURCE_URL_TEST }}
           SPRING_DATASOURCE_USERNAME: ${{ secrets.SPRING_DATASOURCE_USERNAME }}
           SPRING_DATASOURCE_PASSWORD: ${{ secrets.SPRING_DATASOURCE_PASSWORD }}
           SECURITY_JWT_SECRET_KEY: ${{ secrets.SECURITY_JWT_SECRET_KEY }}
@@ -168,9 +168,9 @@ jobs:
             IMG_STORAGE_PATH= ${{ secrets.IMG_STORAGE_PATH }}
             VIDEO_STORAGE_PATH= ${{ secrets.VIDEO_STORAGE_PATH }}
             SUBTITLE_STORAGE_PATH= ${{ secrets.SUBTITLE_STORAGE_PATH }}
-            POSTGRES_DB= ${{ secrets.SPRING_POSTGRES_TABLE }}
-            POSTGRES_USER= ${{ secrets.SPRING_DATASOURCE_USERNAME }}
-            POSTGRES_PASSWORD= ${{ secrets.SPRING_DATASOURCE_PASSWORD }}
+            POSTGRES_DB= ${{ secrets.POSTGRES_DB }}
+            POSTGRES_USER= ${{ secrets.POSTGRES_USER }}
+            POSTGRES_PASSWORD= ${{ secrets.POSTGRES_PASSWORD }}
             APP_COOKIE_SECURE= ${{ secrets.APP_COOKIE_SECURE }}
             APP_COOKIE_NAME= ${{ secrets.APP_COOKIE_NAME }}
             EOF
