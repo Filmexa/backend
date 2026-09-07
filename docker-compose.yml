@@ -17,8 +17,7 @@ services:
     image: mbaanni/filmexa-backend:latest
     container_name: filmexa-backend
     restart: always
-    ports:
-      - "8080:8080"
+
     env_file:
       - ./.env
     depends_on:
