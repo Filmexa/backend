@@ -64,6 +64,15 @@ OAUTH_GOOGLE_AUTHORIZE_URL=https://accounts.google.com/o/oauth2/v2/auth
 OAUTH_GOOGLE_TOKEN_URL=https://oauth2.googleapis.com/token
 OAUTH_GOOGLE_USERINFO_URL=https://www.googleapis.com/oauth2/v3/userinfo
 
+# OAuth2 — Facebook
+OAUTH_FACEBOOK_CLIENT_ID=YOUR_FACEBOOK_CLIENT_ID
+OAUTH_FACEBOOK_CLIENT_SECRET=YOUR_FACEBOOK_CLIENT_SECRET
+OAUTH_FACEBOOK_REDIRECT_URI=http://localhost:8080/api/auth/facebook/callback
+# Optional, default to Facebook's public endpoints
+OAUTH_FACEBOOK_AUTHORIZE_URL=https://www.facebook.com/v19.0/dialog/oauth
+OAUTH_FACEBOOK_TOKEN_URL=https://graph.facebook.com/v19.0/oauth/access_token
+OAUTH_FACEBOOK_USERINFO_URL=https://graph.facebook.com/me
+
 # Email (used for verification codes, password reset, etc.)
 MAIL_HOST=smtp.gmail.com
 MAIL_PORT=587
@@ -82,10 +91,11 @@ Replace the placeholders with your own values:
 - `SECURITY_JWT_EXPIRATION_TIME` / `SECURITY_JWT_REFRESH_EXPIRATION_TIME` — token lifetimes in milliseconds
 - `OAUTH_42_CLIENT_ID` / `OAUTH_42_CLIENT_SECRET` — from your app registered at https://profile.intra.42.fr/oauth/applications, with `OAUTH_42_REDIRECT_URI` set to match exactly
 - `OAUTH_GOOGLE_CLIENT_ID` / `OAUTH_GOOGLE_CLIENT_SECRET` — from an OAuth 2.0 Client ID created at https://console.cloud.google.com/apis/credentials, with `OAUTH_GOOGLE_REDIRECT_URI` added as an authorized redirect URI there (must match exactly, no trailing whitespace)
+- `OAUTH_FACEBOOK_CLIENT_ID` / `OAUTH_FACEBOOK_CLIENT_SECRET` — from an app created at https://developers.facebook.com/apps, with `OAUTH_FACEBOOK_REDIRECT_URI` added as a valid OAuth redirect URI in the app's Facebook Login settings (must match exactly)
 - `MAIL_USERNAME` / `MAIL_PASSWORD` — SMTP credentials used to send verification/reset emails (for Gmail, use an [app password](https://myaccount.google.com/apppasswords), not your regular password)
 - `IMG_STORAGE_PATH` — local folder where uploaded avatars are stored (created automatically if missing)
 
-The `OAUTH_42_*_URL` and `OAUTH_GOOGLE_*_URL` variables are optional — they already default to each provider's real endpoints in `application.properties`, so you only need to set the client ID/secret/redirect URI to get OAuth login working.
+The `OAUTH_42_*_URL`, `OAUTH_GOOGLE_*_URL`, and `OAUTH_FACEBOOK_*_URL` variables are optional — they already default to each provider's real endpoints in `application.properties`, so you only need to set the client ID/secret/redirect URI to get OAuth login working.
 
 ## 3. Run the project
 
