@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   SecurityConfig.java                                :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: maddou <maddou@student.42.fr>              +#+  +:+       +#+        */
+/*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/08 18:34:10 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/09/11 16:14:41 by maddou           ###   ########.fr       */
+/*   Updated: 2026/09/11 21:02:36 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -60,7 +60,9 @@ public class SecurityConfig {
 			"/api/auth/42",
 			"/api/auth/42/callback",
 			"/api/auth/google",
-			"/api/auth/google/callback"
+			"/api/auth/google/callback",
+			"/api/auth/facebook",
+			"/api/auth/facebook/callback"
 	};
 
 	private final UserDetailsService userDetailsService;
