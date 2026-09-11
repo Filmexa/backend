@@ -6,7 +6,7 @@
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/10 16:28:54 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/08/14 22:28:08 by kchaouki         ###   ########.fr       */
+/*   Updated: 2026/09/11 20:04:39 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,6 +15,7 @@ package com.filmexa.stream.modules.users.enums;
 public enum AuthProvider {
     LOCAL("Local"),
     GOOGLE("Google"),
+    FACEBOOK("Facebook"),
     INTRA("Intra 42");
 
     private final String displayName;

@@ -6,7 +6,7 @@
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/14 15:44:40 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/08/31 17:58:29 by kchaouki         ###   ########.fr       */
+/*   Updated: 2026/09/11 20:13:51 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -63,17 +63,20 @@ public class AuthController {
     private final JwtService jwtService;
     private final ProviderAuthService ftOAuthService;
     private final ProviderAuthService googleOAuthService;
+    private final ProviderAuthService facebookOAuthService;
     private final RefreshTokenCookieService refreshTokenCookieService;
 
     public AuthController(AuthenticationManager authenticationManager, UserService userService, JwtService jwtService,
             @Qualifier("ftOAuthServiceImpl") ProviderAuthService ftOAuthService,
             @Qualifier("googleOAuthServiceImpl") ProviderAuthService googleOAuthService,
+            @Qualifier("facebookOAuthServiceImpl") ProviderAuthService facebookOAuthService,
             RefreshTokenCookieService refreshTokenCookieService) {
         this.authenticationManager = authenticationManager;
         this.userService = userService;
         this.jwtService = jwtService;
         this.ftOAuthService = ftOAuthService;
         this.googleOAuthService = googleOAuthService;
+        this.facebookOAuthService = facebookOAuthService;
         this.refreshTokenCookieService = refreshTokenCookieService;
     }
 
@@ -306,6 +309,37 @@ public class AuthController {
         try {
             OAuthUserResponse googleUser = googleOAuthService.authenticate(code, state, request);
             User user = userService.findOrCreateOAuthUser(AuthProvider.GOOGLE, googleUser);
+
+            String accessToken = jwtService.generateToken(user);
+            String refreshToken = jwtService.generateRefreshToken(user);
+            userService.saveRefreshToken(user.getUsername(), refreshToken);
+            refreshTokenCookieService.addCookie(response, refreshToken);
+
+            AuthResponse authResponse = new AuthResponse();
+            authResponse.setEmail(user.getEmail());
+            authResponse.setAccessToken(accessToken);
+            return ResponseEntity.ok(authResponse);
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ErrorResponse(HttpStatus.BAD_REQUEST.value(), e.getMessage()));
+        }
+    }
+
+    @GetMapping("/facebook")
+    public void loginWithFacebook(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        response.sendRedirect(facebookOAuthService.getAuthorizationUrl(request));
+    }
+
+    @GetMapping("/facebook/callback")
+    public ResponseEntity<?> facebookCallback(
+            @RequestParam String code,
+            @RequestParam String state,
+            HttpServletRequest request,
+            HttpServletResponse response
+    ) {
+        try {
+            OAuthUserResponse facebookUser = facebookOAuthService.authenticate(code, state, request);
+            User user = userService.findOrCreateOAuthUser(AuthProvider.FACEBOOK, facebookUser);
 
             String accessToken = jwtService.generateToken(user);
             String refreshToken = jwtService.generateRefreshToken(user);

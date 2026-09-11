@@ -6,7 +6,7 @@
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/08 18:09:41 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/08/16 19:24:34 by kchaouki         ###   ########.fr       */
+/*   Updated: 2026/09/11 20:51:03 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -85,7 +85,7 @@ public class User extends AbstractEntity implements UserDetails {
     )
     private String phoneNumber;
 
-    @Column
+    @Column(columnDefinition = "TEXT")
     private String profilePictureUrl;
 
     @Enumerated(EnumType.STRING)
