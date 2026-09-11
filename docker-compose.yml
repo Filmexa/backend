@@ -10,7 +10,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
-      - filmexa-net
+      - shared-network
   
   backend:
     image: mbaanni/filmexa-backend:latest
@@ -23,10 +23,11 @@ services:
     depends_on:
       - postgres
     networks:
-      - filmexa-net
+      - shared-network
 volumes:
   postgres_data:
 
 networks:
-  filmexa-net:
-    driver: bridge
+  shared-network:
+    external: true
+    name: filmexa-net

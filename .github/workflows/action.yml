@@ -74,6 +74,8 @@ jobs:
           IMG_STORAGE_PATH: ${{ secrets.IMG_STORAGE_PATH }}
           VIDEO_STORAGE_PATH: ${{ secrets.VIDEO_STORAGE_PATH }}
           SUBTITLE_STORAGE_PATH: ${{ secrets.SUBTITLE_STORAGE_PATH }}
+          APP_COOKIE_NAME: ${{ secrets.APP_COOKIE_NAME }}
+          APP_COOKIE_SECURE: ${{ secrets.APP_COOKIE_SECURE }}
   build:
     name: Build and Push Docker Image
     needs: test
@@ -104,7 +106,7 @@ jobs:
         run: |
         
           docker buildx build \
-            --platform linux/amd64,linux/arm64 \
+            --platform linux/amd64 \
             -t ${{ secrets.DOCKERUSER }}/filmexa-backend:latest \
             -t ${{ secrets.DOCKERUSER }}/filmexa-backend:${{ github.sha }} \
             --push .
@@ -127,7 +129,7 @@ jobs:
           chmod 600 ssh_key.pem
 
           scp -o StrictHostKeyChecking=no -i ssh_key.pem \
-            docker-compose.yml ${{ secrets.ORACLE_INSTANCE_USER }}@${{ secrets.ORACLE_INSTANCE_HOST }}:/home/${{ secrets.ORACLE_INSTANCE_USER }}/
+            docker-compose.yml ${{ secrets.ORACLE_INSTANCE_USER }}@${{ secrets.ORACLE_INSTANCE_HOST }}:/home/${{ secrets.ORACLE_INSTANCE_USER }}/backend
           
           rm ssh_key.pem
 
@@ -139,7 +141,7 @@ jobs:
           key: ${{ secrets.ORACLE_INSTANCE_KEY }}
           
           script: |
-            cd /home/ubuntu/
+            cd /home/ubuntu/backend
             
             cat << 'EOF' > .env
             SPRING_DATASOURCE_URL= ${{ secrets.SPRING_DATASOURCE_URL }}
@@ -171,6 +173,8 @@ jobs:
             POSTGRES_DB= filmexa_test
             POSTGRES_USER= ${{ secrets.SPRING_DATASOURCE_USERNAME }}
             POSTGRES_PASSWORD= ${{ secrets.SPRING_DATASOURCE_PASSWORD }}
+            APP_COOKIE_SECURE= ${{ secrets.APP_COOKIE_SECURE }}
+            APP_COOKIE_NAME= ${{ secrets.APP_COOKIE_NAME }}
             EOF
             docker compose pull
             docker compose up -d --remove-orphans
