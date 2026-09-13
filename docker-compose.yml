@@ -7,6 +7,7 @@ services:
     restart: always
     env_file:
       - ./.env
+
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
@@ -16,8 +17,7 @@ services:
     image: mbaanni/filmexa-backend:latest
     container_name: filmexa-backend
     restart: always
-    ports:
-      - "8080:8080"
+
     env_file:
       - ./.env
     depends_on:
