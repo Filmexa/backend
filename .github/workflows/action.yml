@@ -108,7 +108,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           tags: |
             ${{ secrets.DOCKERUSER }}/filmexa-backend:latest
-            ${{ secrets.DOCKERUSER }}/filmexa-backend:${{ github.sha }}
+            ${{ secrets.DOCKERUSER }}/filmexa-backend:${{ github.actor }}-${{ github.sha }}
 
   deploy-code:
     name: deploy to server
@@ -176,3 +176,4 @@ jobs:
             EOF
             docker compose pull
             docker compose up -d --remove-orphans
+            docker image prune -f 
