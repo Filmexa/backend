@@ -6,7 +6,7 @@
 /*   By: maddou <maddou@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/08 18:34:10 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/09/14 15:04:05 by maddou           ###   ########.fr       */
+/*   Updated: 2026/09/14 20:35:43 by maddou           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -37,7 +37,6 @@ import com.filmexa.stream.security.filter.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.web.client.RestClient;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 
 @RequiredArgsConstructor
@@ -71,6 +70,7 @@ public class SecurityConfig {
 
 	private static final String[] PUBLIC_WHITELIST = {
 			"/api/movie-categories/**",
+			"/api/movies/**",
 	};
 
 	private final UserDetailsService userDetailsService;
