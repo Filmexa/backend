@@ -78,7 +78,7 @@ jobs:
           APP_COOKIE_SECURE: ${{ secrets.APP_COOKIE_SECURE }}
           TMDB_ACCESS_TOKEN: ${{ secrets.TMDB_ACCESS_TOKEN }}
           TMDB_BASE_URL: ${{ secrets.TMDB_BASE_URL }}
-          TMDB_IMAGE_BASE_URL: {{ secrets.TMDB_IMAGE_BASE_URL }}
+          TMDB_IMAGE_BASE_URL: ${{ secrets.TMDB_IMAGE_BASE_URL }}
   build:
     name: Build and Push Docker Image
     needs: test
