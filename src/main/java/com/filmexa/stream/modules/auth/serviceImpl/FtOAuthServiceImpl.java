@@ -6,7 +6,7 @@
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/17 11:24:43 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/08/17 15:39:44 by kchaouki         ###   ########.fr       */
+/*   Updated: 2026/09/13 16:47:05 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -44,10 +44,10 @@ public class FtOAuthServiceImpl implements ProviderAuthService {
     @Value("${ft.redirect-uri}")
     private String redirectUri;
 
-    @Value("${OAUTH_42_CLIENT_ID}")
+    @Value("${ft.client.id}")
     private String clientId;
 
-    @Value("${OAUTH_42_CLIENT_SECRET}")
+    @Value("${ft.client.secret}")
     private String clientSecret;
 
     @Value("${ft.authorize-url}")
