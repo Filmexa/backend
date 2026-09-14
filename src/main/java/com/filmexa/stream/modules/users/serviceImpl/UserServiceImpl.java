@@ -6,7 +6,7 @@
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/08 18:23:04 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/08/31 22:30:13 by kchaouki         ###   ########.fr       */
+/*   Updated: 2026/09/13 20:45:34 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -322,6 +322,16 @@ public class UserServiceImpl implements UserService {
 
         if (existingUser.isPresent()) {
             return existingUser.get();
+        }
+
+        Optional<User> userWithSameEmail = userRepository.findByEmail(oauthUser.getEmail());
+        if (userWithSameEmail.isPresent()) {
+            User user = userWithSameEmail.get();
+            user.setAuthProvider(provider);
+            user.setProviderId(oauthUser.getProviderId());
+            user.setEnabled(true);
+            user.setUpdatedAt(LocalDateTime.now());
+            return userRepository.save(user);
         }
 
         User user = new User();

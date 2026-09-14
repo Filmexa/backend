@@ -9,7 +9,7 @@ on:
     branches:
       - main
       - dev
-    workflow_dispatch:
+  workflow_dispatch:
   
 
 jobs:
@@ -19,16 +19,16 @@ jobs:
       postgres:
         image: postgres:15
         env:
-          POSTGRES_DB: filmexa_test
-          POSTGRES_USER: ${{ secrets.SPRING_DATASOURCE_USERNAME }}
-          POSTGRES_PASSWORD: ${{ secrets.SPRING_DATASOURCE_PASSWORD }}
+          POSTGRES_DB: ${{ secrets.POSTGRES_TEST }}
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
         ports:
           - 5432:5432
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
           --health-timeout 5s
-          --health-retries 5
+          --health-retries 4
 
     steps:
       - uses: actions/checkout@v4
@@ -48,7 +48,7 @@ jobs:
           chmod +x mvnw
           ./mvnw clean verify
         env:
-          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/filmexa_test
+          SPRING_DATASOURCE_URL: ${{ secrets.SPRING_DATASOURCE_URL_TEST }}
           SPRING_DATASOURCE_USERNAME: ${{ secrets.SPRING_DATASOURCE_USERNAME }}
           SPRING_DATASOURCE_PASSWORD: ${{ secrets.SPRING_DATASOURCE_PASSWORD }}
           SECURITY_JWT_SECRET_KEY: ${{ secrets.SECURITY_JWT_SECRET_KEY }}
@@ -81,36 +81,34 @@ jobs:
     needs: test
 
     # Only build/push after tests passed
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main')
 
     runs-on: ubuntu-latest
     steps:
 
       - name: Checkout code
         uses: actions/checkout@v4
-
       - name: Log in to Docker Hub
-        run: |
-            docker login -u ${{ secrets.DOCKERUSER }} -p ${{ secrets.DOCKERPASSWORD }}
-
-      - name: Setup Buildx
-        run: |
-          docker buildx create \
-            --name multiarch \
-            --driver docker-container \
-            --use
-
-          docker buildx inspect --bootstrap
-
-      - name: Build and Push
-        run: |
-        
-          docker buildx build \
-            --platform linux/amd64 \
-            -t ${{ secrets.DOCKERUSER }}/filmexa-backend:latest \
-            -t ${{ secrets.DOCKERUSER }}/filmexa-backend:${{ github.sha }} \
-            --push .
-
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKERUSER }}
+          password: ${{ secrets.DOCKERPASSWORD }}
+      
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v4
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+      
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: |
+            ${{ secrets.DOCKERUSER }}/filmexa-backend:latest
+            ${{ secrets.DOCKERUSER }}/filmexa-backend:${{ github.sha }}
 
   deploy-code:
     name: deploy to server
@@ -170,9 +168,9 @@ jobs:
             IMG_STORAGE_PATH= ${{ secrets.IMG_STORAGE_PATH }}
             VIDEO_STORAGE_PATH= ${{ secrets.VIDEO_STORAGE_PATH }}
             SUBTITLE_STORAGE_PATH= ${{ secrets.SUBTITLE_STORAGE_PATH }}
-            POSTGRES_DB= filmexa_test
-            POSTGRES_USER= ${{ secrets.SPRING_DATASOURCE_USERNAME }}
-            POSTGRES_PASSWORD= ${{ secrets.SPRING_DATASOURCE_PASSWORD }}
+            POSTGRES_DB= ${{ secrets.POSTGRES_DB }}
+            POSTGRES_USER= ${{ secrets.POSTGRES_USER }}
+            POSTGRES_PASSWORD= ${{ secrets.POSTGRES_PASSWORD }}
             APP_COOKIE_SECURE= ${{ secrets.APP_COOKIE_SECURE }}
             APP_COOKIE_NAME= ${{ secrets.APP_COOKIE_NAME }}
             EOF
