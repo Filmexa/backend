@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   SecurityConfig.java                                :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
+/*   By: maddou <maddou@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/08 18:34:10 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/09/14 12:50:07 by kchaouki         ###   ########.fr       */
+/*   Updated: 2026/09/14 15:04:05 by maddou           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,6 +35,10 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import com.filmexa.stream.security.filter.JwtAuthenticationFilter;
 
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.web.client.RestClient;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
 
 @RequiredArgsConstructor
 @Configuration
@@ -74,7 +78,7 @@ public class SecurityConfig {
 
 	@Value("${app.cors.allowed-origins}")
 	private List<String> allowedOrigins;
-
+	
 	@Bean
 	public PasswordEncoder passwordEncoder() {
 		return new BCryptPasswordEncoder();
@@ -120,4 +124,24 @@ public class SecurityConfig {
 	public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfiguration) throws Exception {
 		return authConfiguration.getAuthenticationManager();
 	}
+
+	@Bean
+    public RestClient.Builder restClientBuilder() {
+        return RestClient.builder();
+    }
+    
+    @Bean
+    RestClient tmdbRestClient(
+            RestClient.Builder builder,
+            @Value("${tmdb.base-url}") String baseUrl,
+            @Value("${tmdb.access-token}") String token
+    ) {
+        return builder
+                .baseUrl(baseUrl)
+                .defaultHeader(
+                    HttpHeaders.AUTHORIZATION,
+                    "Bearer " + token
+                )
+                .build();
+    }
 }
