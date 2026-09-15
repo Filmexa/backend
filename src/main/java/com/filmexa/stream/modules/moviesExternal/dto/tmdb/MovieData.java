@@ -1,23 +1,27 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   MovieProvider.java                                 :+:      :+:    :+:   */
+/*   MovieData.java                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/09/14 12:39:46 by maddou            #+#    #+#             */
-/*   Updated: 2026/09/15 19:49:21 by marouan          ###   ########.fr       */
+/*   Created: 2026/09/15 18:28:48 by marouan           #+#    #+#             */
+/*   Updated: 2026/09/15 18:36:28 by marouan          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-package com.filmexa.stream.modules.moviesExternal.client;
+package com.filmexa.stream.modules.moviesExternal.dto.tmdb;
 
+import lombok.Data;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 import java.util.List;
-import com.filmexa.stream.modules.moviesExternal.dto.tmdb.TrendingMovieProviderResponse;
+
 import com.filmexa.stream.modules.moviesExternal.dto.tmdb.MoviesProviderData;
 
-public interface MovieProvider {
-    List< TrendingMovieProviderResponse > getTrendingMovies( String language );
-    List< MoviesProviderData > getTopRatedMovies( String language );
-    // void getHomeData( String language );
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+public class MovieData {
+    private List<MoviesProviderData> results;
 }

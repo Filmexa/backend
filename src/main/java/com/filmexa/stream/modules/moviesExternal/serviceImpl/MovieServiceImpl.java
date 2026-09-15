@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   MovieServiceImpl.java                              :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: maddou <maddou@student.42.fr>              +#+  +:+       +#+        */
+/*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/14 12:33:45 by maddou            #+#    #+#             */
-/*   Updated: 2026/09/14 20:57:05 by maddou           ###   ########.fr       */
+/*   Updated: 2026/09/15 19:49:51 by marouan          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,6 +23,7 @@ import com.filmexa.stream.modules.movie.dto.MovieResponse;
 import com.filmexa.stream.modules.moviesExternal.client.MovieProvider;
 import com.filmexa.stream.modules.moviesExternal.dto.response.TrendingMoviesResponse;
 import com.filmexa.stream.modules.moviesExternal.dto.tmdb.TrendingMovieProviderResponse;
+import com.filmexa.stream.modules.moviesExternal.dto.tmdb.MoviesProviderData;
 import com.filmexa.stream.modules.moviesExternal.mapper.MovieGenreMapper;
 
 @Service
@@ -38,7 +39,7 @@ public class MovieServiceImpl implements MovieService {
     }
 
     @Override
-    public List< TrendingMoviesResponse > getTrendingMovie( String language) {
+    public List< TrendingMoviesResponse > getTrendingMovies( String language) {
 
         List< TrendingMovieProviderResponse > providerMovies = movieProvider.getTrendingMovies( language );
         return providerMovies.stream()
@@ -56,5 +57,12 @@ public class MovieServiceImpl implements MovieService {
                 .toList()
             ))
         .toList();
+    }
+
+    @Override
+    public List< MoviesProviderData > getHomeMovies( String language) {
+        // get top rated
+        List< MoviesProviderData > providerMovies = movieProvider.getTopRatedMovies( language );
+        return providerMovies;
     }
 }

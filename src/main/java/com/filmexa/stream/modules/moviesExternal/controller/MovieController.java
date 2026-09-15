@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   MovieController.java                               :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: maddou <maddou@student.42.fr>              +#+  +:+       +#+        */
+/*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/13 10:27:27 by maddou            #+#    #+#             */
-/*   Updated: 2026/09/14 20:25:36 by maddou           ###   ########.fr       */
+/*   Updated: 2026/09/15 19:48:08 by marouan          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import com.filmexa.stream.modules.moviesExternal.service.MovieService;
 import com.filmexa.stream.modules.moviesExternal.dto.request.MovieQuery;
 import com.filmexa.stream.modules.moviesExternal.dto.response.TrendingMoviesResponse;
+import com.filmexa.stream.modules.moviesExternal.dto.tmdb.MoviesProviderData;
 
 import jakarta.validation.Valid;
 
@@ -38,11 +39,12 @@ public class MovieController {
 
     @GetMapping("/trending/week")
     public List< TrendingMoviesResponse >getTrendingMovies( @Valid @ModelAttribute MovieQuery query ) {
-        return this.movieService.getTrendingMovie( query.getLanguage() );
+        return this.movieService.getTrendingMovies( query.getLanguage() );
     }
 
-    // @GetMapping("/home")
-    // public List< TrendingMoviesResponse >getTrendingMovies( ) {
-    //     return this.movieService.getTrendingMovie();
-    // }
+    @GetMapping("/home")
+    public /*List< TrendingMoviesResponse >*/ List< MoviesProviderData > retrieveHomeData( @Valid @ModelAttribute MovieQuery query ) {
+        // return this.movieService.getTrendingMovie();
+        return this.movieService.getHomeMovies( query.getLanguage() );
+    }
 }

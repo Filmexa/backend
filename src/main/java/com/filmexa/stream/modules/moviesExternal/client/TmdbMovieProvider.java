@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   TmdbMovieProvider.java                             :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: maddou <maddou@student.42.fr>              +#+  +:+       +#+        */
+/*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/13 10:29:13 by maddou            #+#    #+#             */
-/*   Updated: 2026/09/14 19:15:08 by maddou           ###   ########.fr       */
+/*   Updated: 2026/09/15 19:52:28 by marouan          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,6 +20,8 @@ import org.springframework.core.ParameterizedTypeReference;
 import com.filmexa.stream.modules.moviesExternal.client.MovieProvider;
 import com.filmexa.stream.modules.moviesExternal.dto.tmdb.TmdbTrendingMoviesResponse;
 import com.filmexa.stream.modules.moviesExternal.dto.tmdb.TrendingMovieProviderResponse;
+import com.filmexa.stream.modules.moviesExternal.dto.tmdb.MoviesProviderData;
+import com.filmexa.stream.modules.moviesExternal.dto.tmdb.MovieData;
 
 import java.util.List;
 
@@ -39,6 +41,16 @@ public class TmdbMovieProvider implements MovieProvider {
             .uri("/trending/movie/week?language={language}", language)
             .retrieve()
             .body( TmdbTrendingMoviesResponse.class );
+        return response.getResults();
+    }
+
+    @Override
+    public List< MoviesProviderData > getTopRatedMovies( String language ){
+        MovieData response =  this.restClient
+            .get()
+            .uri("/movie/top_rated?language={language}", language)
+            .retrieve()
+            .body( MovieData.class );
         return response.getResults();
     }
 }
