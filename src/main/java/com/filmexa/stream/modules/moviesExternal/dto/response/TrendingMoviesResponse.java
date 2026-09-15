@@ -28,5 +28,5 @@ public class TrendingMoviesResponse {
     String      posterUrl;
     String      backdropUrl;
     String      overview;
-    // List<String> genres;
+    List<String> genres;
 }

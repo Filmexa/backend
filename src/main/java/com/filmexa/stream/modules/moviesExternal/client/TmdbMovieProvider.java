@@ -33,10 +33,10 @@ public class TmdbMovieProvider implements MovieProvider {
     }
 
     @Override
-    public List< TrendingMovieProviderResponse > getTrendingMovies( ){
+    public List< TrendingMovieProviderResponse > getTrendingMovies( String language ){
         TmdbTrendingMoviesResponse response =  this.restClient
             .get()
-            .uri("/trending/movie/week")
+            .uri("/trending/movie/week?language={language}", language)
             .retrieve()
             .body( TmdbTrendingMoviesResponse.class );
         return response.getResults();

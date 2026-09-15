@@ -16,5 +16,5 @@ import java.util.List;
 import com.filmexa.stream.modules.moviesExternal.dto.tmdb.TrendingMovieProviderResponse;
 
 public interface MovieProvider {
-    List< TrendingMovieProviderResponse > getTrendingMovies( );
+    List< TrendingMovieProviderResponse > getTrendingMovies( String language );
 }

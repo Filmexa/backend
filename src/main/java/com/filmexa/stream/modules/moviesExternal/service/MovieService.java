@@ -17,5 +17,5 @@ import java.util.List;
 import com.filmexa.stream.modules.moviesExternal.dto.response.TrendingMoviesResponse;
 
 public interface MovieService {
-    List< TrendingMoviesResponse > getTrendingMovie( ); 
+    List< TrendingMoviesResponse > getTrendingMovie( String language ); 
 }

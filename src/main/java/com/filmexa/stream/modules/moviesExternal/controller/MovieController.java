@@ -14,10 +14,15 @@ package com.filmexa.stream.modules.moviesExternal.controller;
 
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.GetMapping;
 
 import com.filmexa.stream.modules.moviesExternal.service.MovieService;
+import com.filmexa.stream.modules.moviesExternal.dto.request.MovieQuery;
 import com.filmexa.stream.modules.moviesExternal.dto.response.TrendingMoviesResponse;
+
+import jakarta.validation.Valid;
 
 import java.util.List;
 
@@ -31,8 +36,13 @@ public class MovieController {
         this.movieService = movieService;
     }
 
-    @GetMapping
-    public List< TrendingMoviesResponse >getTrendingMovies( ) {
-        return this.movieService.getTrendingMovie();
+    @GetMapping("/trending/week")
+    public List< TrendingMoviesResponse >getTrendingMovies( @Valid @ModelAttribute MovieQuery query ) {
+        return this.movieService.getTrendingMovie( query.getLanguage() );
     }
+
+    // @GetMapping("/home")
+    // public List< TrendingMoviesResponse >getTrendingMovies( ) {
+    //     return this.movieService.getTrendingMovie();
+    // }
 }

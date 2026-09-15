@@ -23,7 +23,7 @@ import com.filmexa.stream.modules.movie.dto.MovieResponse;
 import com.filmexa.stream.modules.moviesExternal.client.MovieProvider;
 import com.filmexa.stream.modules.moviesExternal.dto.response.TrendingMoviesResponse;
 import com.filmexa.stream.modules.moviesExternal.dto.tmdb.TrendingMovieProviderResponse;
-// import com.filmexa.stream.modules.moviesExternal.mapper.MovieGenreMapper;
+import com.filmexa.stream.modules.moviesExternal.mapper.MovieGenreMapper;
 
 @Service
 public class MovieServiceImpl implements MovieService {
@@ -38,25 +38,22 @@ public class MovieServiceImpl implements MovieService {
     }
 
     @Override
-    public List< TrendingMoviesResponse > getTrendingMovie( ) {
+    public List< TrendingMoviesResponse > getTrendingMovie( String language) {
 
-        List< TrendingMovieProviderResponse > providerMovies = movieProvider.getTrendingMovies();
+        List< TrendingMovieProviderResponse > providerMovies = movieProvider.getTrendingMovies( language );
         return providerMovies.stream()
+        .limit(10)
         .map(movie -> new TrendingMoviesResponse(
             movie.getId(),
             movie.getTitle(),
             movie.getRelease_date(),
             this.imageBaseUrl + movie.getPoster_path(),
             this.imageBaseUrl + movie.getBackdrop_path(),
-            movie.getOverview()
-            // movie.genre_ids()
-            //     .stream()
-            //     .map(String::valueOf)
-            //     .toList()
-            // movie.getGenre_ids()
-            //     .stream()
-            //     .map( MovieGenreMapper::getName )
-            //     .toList()
+            movie.getOverview(),
+            movie.getGenre_ids()
+                .stream()
+                .map(id -> MovieGenreMapper.getName(id, language) )
+                .toList()
             ))
         .toList();
     }
