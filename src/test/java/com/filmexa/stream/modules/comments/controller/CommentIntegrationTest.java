@@ -127,6 +127,7 @@ class CommentIntegrationTest extends AbstractIntegrationTest {
     @Test
     void createComment_shouldReturnForbidden_whenNotAuthenticated() throws Exception {
         mockMvc.perform(post("/api/movies/101/comments")
+                        .header("Authorization", "Bearer " + "not valide token")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"content":"Nope"}
