@@ -16,6 +16,7 @@ import lombok.Data;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import java.util.List;
+import java.time.LocalDate;
 
 @Data
 @AllArgsConstructor
@@ -23,6 +24,6 @@ import java.util.List;
 public class MoviesProviderData {
     Long    id;
     String  title;
-    String  release_date;
+    LocalDate  release_date;
     String  poster_path;
 }

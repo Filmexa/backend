@@ -6,7 +6,7 @@
 /*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/13 10:29:13 by maddou            #+#    #+#             */
-/*   Updated: 2026/09/15 19:52:28 by marouan          ###   ########.fr       */
+/*   Updated: 2026/09/16 13:04:38 by marouan          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -49,6 +49,23 @@ public class TmdbMovieProvider implements MovieProvider {
         MovieData response =  this.restClient
             .get()
             .uri("/movie/top_rated?language={language}", language)
+            .retrieve()
+            .body( MovieData.class );
+        return response.getResults();
+    }
+
+    //with_genres={genreId} // Filter by genre 
+    // &sort_by=popularity.desc // Most popular first 
+    // &vote_average.gte=7 // Rating >= 7/10 
+    // &vote_count.gte=500 // At least 500 votes
+    @Override
+    public List< MoviesProviderData > getMoviesByGenre( String language, Long id ){
+        MovieData response =  this.restClient
+            .get()
+            .uri("/discover/movie?language={language}" +
+            "&with_genres={id}&sort_by=popularity.desc" +
+            "&vote_average.gte=7" +
+            "&vote_count.gte=500&page=1", language, id )
             .retrieve()
             .body( MovieData.class );
         return response.getResults();

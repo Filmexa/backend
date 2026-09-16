@@ -6,7 +6,7 @@
 /*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/13 10:27:27 by maddou            #+#    #+#             */
-/*   Updated: 2026/09/15 19:48:08 by marouan          ###   ########.fr       */
+/*   Updated: 2026/09/16 14:41:23 by marouan          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,11 +21,13 @@ import org.springframework.web.bind.annotation.GetMapping;
 import com.filmexa.stream.modules.moviesExternal.service.MovieService;
 import com.filmexa.stream.modules.moviesExternal.dto.request.MovieQuery;
 import com.filmexa.stream.modules.moviesExternal.dto.response.TrendingMoviesResponse;
+import com.filmexa.stream.modules.moviesExternal.dto.response.MovieResponse;
 import com.filmexa.stream.modules.moviesExternal.dto.tmdb.MoviesProviderData;
 
 import jakarta.validation.Valid;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/movies")
@@ -43,8 +45,7 @@ public class MovieController {
     }
 
     @GetMapping("/home")
-    public /*List< TrendingMoviesResponse >*/ List< MoviesProviderData > retrieveHomeData( @Valid @ModelAttribute MovieQuery query ) {
-        // return this.movieService.getTrendingMovie();
-        return this.movieService.getHomeMovies( query.getLanguage() );
+    public Map<String, List<MovieResponse>> getHomeData( @Valid @ModelAttribute MovieQuery query ) {
+        return this.movieService.buildHomeMovies( query.getLanguage() );
     }
 }
