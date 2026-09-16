@@ -6,7 +6,7 @@
 /*   By: maddou <maddou@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/30 11:09:53 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/09/11 16:29:15 by maddou           ###   ########.fr       */
+/*   Updated: 2026/09/14 18:58:34 by maddou           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -101,6 +101,7 @@ public class GlobalExceptionHandler {
     
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleUnexpectedException( Exception ex ) {
+        System.out.println(ex.getMessage());
             return builderResponse( 
                 "Internal server error",
                 HttpStatus.INTERNAL_SERVER_ERROR
