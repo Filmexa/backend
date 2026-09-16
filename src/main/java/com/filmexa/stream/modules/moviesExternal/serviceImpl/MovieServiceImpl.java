@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   MovieServiceImpl.java                              :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
+/*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/14 12:33:45 by maddou            #+#    #+#             */
-/*   Updated: 2026/09/16 13:25:18 by marouan          ###   ########.fr       */
+/*   Updated: 2026/09/16 18:59:40 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,6 +15,7 @@ package com.filmexa.stream.modules.moviesExternal.serviceImpl;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -23,9 +24,9 @@ import com.filmexa.stream.modules.moviesExternal.client.MovieProvider;
 import com.filmexa.stream.modules.moviesExternal.dto.response.MovieResponse;
 import com.filmexa.stream.modules.moviesExternal.dto.response.TrendingMoviesResponse;
 import com.filmexa.stream.modules.moviesExternal.dto.tmdb.TrendingMovieProviderResponse;
-import com.filmexa.stream.modules.moviesExternal.dto.tmdb.MoviesProviderData;
 import com.filmexa.stream.modules.moviesExternal.mapper.MovieGenreMapper;
 import com.filmexa.stream.modules.moviesExternal.mapper.MovieMapper;
+import com.filmexa.stream.modules.moviesExternal.mapper.TmdbImageUrlBuilder;
 
 @Service
 public class MovieServiceImpl implements MovieService {
@@ -53,8 +54,8 @@ public class MovieServiceImpl implements MovieService {
             movie.getId(),
             movie.getTitle(),
             movie.getRelease_date(),
-            this.imageBaseUrl + movie.getPoster_path(),
-            this.imageBaseUrl + movie.getBackdrop_path(),
+            TmdbImageUrlBuilder.build( this.imageBaseUrl, "w500", movie.getPoster_path() ),
+            TmdbImageUrlBuilder.build( this.imageBaseUrl, "w1280", movie.getBackdrop_path() ),
             movie.getOverview(),
             movie.getGenre_ids()
                 .stream()
@@ -115,13 +116,13 @@ public class MovieServiceImpl implements MovieService {
         List< MovieResponse > drama,
         List< MovieResponse > romance
     ) {
-        return Map.of(
-            "topRated", topRated,
-            "action", action,
-            "comedy", comedy,
-            "horror", horror,
-            "drama", drama,
-            "romance", romance
-        );
+        Map<String, List<MovieResponse>> homeMovies = new LinkedHashMap<>();
+        homeMovies.put( "topRated", topRated );
+        homeMovies.put( "action", action );
+        homeMovies.put( "comedy", comedy );
+        homeMovies.put( "horror", horror );
+        homeMovies.put( "drama", drama );
+        homeMovies.put( "romance", romance );
+        return homeMovies;
     }
 }
