@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   MovieServiceImpl.java                              :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
+/*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/14 12:33:45 by maddou            #+#    #+#             */
-/*   Updated: 2026/09/16 13:25:18 by marouan          ###   ########.fr       */
+/*   Updated: 2026/09/16 18:31:48 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,9 +23,9 @@ import com.filmexa.stream.modules.moviesExternal.client.MovieProvider;
 import com.filmexa.stream.modules.moviesExternal.dto.response.MovieResponse;
 import com.filmexa.stream.modules.moviesExternal.dto.response.TrendingMoviesResponse;
 import com.filmexa.stream.modules.moviesExternal.dto.tmdb.TrendingMovieProviderResponse;
-import com.filmexa.stream.modules.moviesExternal.dto.tmdb.MoviesProviderData;
 import com.filmexa.stream.modules.moviesExternal.mapper.MovieGenreMapper;
 import com.filmexa.stream.modules.moviesExternal.mapper.MovieMapper;
+import com.filmexa.stream.modules.moviesExternal.mapper.TmdbImageUrlBuilder;
 
 @Service
 public class MovieServiceImpl implements MovieService {
@@ -53,8 +53,8 @@ public class MovieServiceImpl implements MovieService {
             movie.getId(),
             movie.getTitle(),
             movie.getRelease_date(),
-            this.imageBaseUrl + movie.getPoster_path(),
-            this.imageBaseUrl + movie.getBackdrop_path(),
+            TmdbImageUrlBuilder.build( this.imageBaseUrl, "w500", movie.getPoster_path() ),
+            TmdbImageUrlBuilder.build( this.imageBaseUrl, "w1280", movie.getBackdrop_path() ),
             movie.getOverview(),
             movie.getGenre_ids()
                 .stream()
