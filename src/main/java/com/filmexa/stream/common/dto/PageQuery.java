@@ -1,30 +1,30 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   MovieQuery.java                                    :+:      :+:    :+:   */
+/*   PageQuery.java                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/09/16 15:52:37 by marouan           #+#    #+#             */
-/*   Updated: 2026/09/17 12:15:54 by marouan          ###   ########.fr       */
+/*   Created: 2026/09/16 15:51:47 by marouan           #+#    #+#             */
+/*   Updated: 2026/09/16 15:53:45 by marouan          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-package com.filmexa.stream.modules.moviesExternal.dto.request;
+package com.filmexa.stream.common.dto;
 
 import lombok.Data;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class MovieQuery {
-    @Pattern(
-        regexp = "^(en|fr|ar)$",
-        message = "Language must be en, fr, or ar"
-    )
-    private String language = "en";
-} 
+public class PageQuery {
+    @Min(value = 1, message = "Page must be at least 1")
+    @Max(value = 500, message = "Page must not exceed 500")
+    Integer page;
+}
