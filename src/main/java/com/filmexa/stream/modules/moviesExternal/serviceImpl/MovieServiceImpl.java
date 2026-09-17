@@ -60,8 +60,8 @@ public class MovieServiceImpl implements MovieService {
             movie.getId(),
             movie.getTitle(),
             movie.getRelease_date(),
-            this.imageBaseUrl + movie.getPoster_path(),
-            this.imageBaseUrl + movie.getBackdrop_path(),
+            movie.getPoster_path() != null ? this.imageBaseUrl + movie.getPoster_path() : "",
+            movie.getBackdrop_path() != null ? this.imageBaseUrl + movie.getBackdrop_path() : "",
             movie.getOverview(),
             movie.getGenre_ids()
                 .stream()
@@ -144,7 +144,28 @@ public class MovieServiceImpl implements MovieService {
         );
         return result;
     }
-    
+    @Override
+    public MoviePageResponse searchMovie( String language, String query, Pageable page ) {
+        // validate page 
+        int pageNumber = page.getPageNumber() == 0 ? 1 : page.getPageNumber();
+        if ( pageNumber > 1 || pageNumber < 1 ) {
+            throw new InvalidPaginationException( "Invalid page: Pages start at 1 and max at 500. They are expected to be an integer." );
+        }
+        // get data from provider
+        TmdbMoviesPageableResponse providerResult = movieProvider.searchMovie( language, query, pageNumber );
+        
+        // Return movie data
+        return new MoviePageResponse(
+            providerResult.getPage(),
+            1,
+            providerResult.getResults().size(),
+            providerResult.getResults()
+                .stream()
+                .map( movie -> this.movieMapper.toMovieResponse( movie ) )
+                .toList()
+        );
+    }
+
     private Map<String, List<MovieResponse>> generateHomeMoviesData(
         List< MovieResponse > topRated,
         List< MovieResponse > action,

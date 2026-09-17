@@ -30,7 +30,7 @@ public class MovieMapper {
             movieProvider.getId(),
             movieProvider.getTitle(),
             movieProvider.getRelease_date(),
-            this.imageBaseUrl + movieProvider.getPoster_path()
+            movieProvider.getPoster_path() != null ? this.imageBaseUrl + movieProvider.getPoster_path() : null
         );
     }
 }

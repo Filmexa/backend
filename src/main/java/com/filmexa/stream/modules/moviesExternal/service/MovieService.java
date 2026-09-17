@@ -27,4 +27,5 @@ public interface MovieService {
     Map<String, List<MovieResponse>> buildHomeMovies( String language );
     List<MovieResponse> getMoviesByGenre( String language, Long id );
     MoviePageResponse getMoviesByGenre( String language, Integer id, Pageable page );
+    MoviePageResponse searchMovie( String language, String query, Pageable page );
 }

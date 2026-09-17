@@ -83,4 +83,17 @@ public class TmdbMovieProvider implements MovieProvider {
             .body( TmdbMoviesPageableResponse.class );
         return response;
     }
+
+    @Override
+    public TmdbMoviesPageableResponse searchMovie( String language, String query, int page ){
+        TmdbMoviesPageableResponse response =  this.restClient
+            .get()
+            .uri("/search/movie?language={language}" +
+            "&sort_by=popularity.desc" +
+            "&query={query}" +
+            "&page={page}", language, query, page )
+            .retrieve()
+            .body( TmdbMoviesPageableResponse.class );
+        return response;
+    }
 }
