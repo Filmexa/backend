@@ -6,7 +6,7 @@
 /*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/13 10:29:13 by maddou            #+#    #+#             */
-/*   Updated: 2026/09/16 13:04:38 by marouan          ###   ########.fr       */
+/*   Updated: 2026/09/17 11:27:46 by marouan          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,6 +20,7 @@ import org.springframework.core.ParameterizedTypeReference;
 import com.filmexa.stream.modules.moviesExternal.client.MovieProvider;
 import com.filmexa.stream.modules.moviesExternal.dto.tmdb.TmdbTrendingMoviesResponse;
 import com.filmexa.stream.modules.moviesExternal.dto.tmdb.TrendingMovieProviderResponse;
+import com.filmexa.stream.modules.moviesExternal.dto.tmdb.TmdbMoviesPageableResponse;
 import com.filmexa.stream.modules.moviesExternal.dto.tmdb.MoviesProviderData;
 import com.filmexa.stream.modules.moviesExternal.dto.tmdb.MovieData;
 
@@ -69,5 +70,17 @@ public class TmdbMovieProvider implements MovieProvider {
             .retrieve()
             .body( MovieData.class );
         return response.getResults();
+    }
+    
+    @Override
+    public TmdbMoviesPageableResponse getMoviesByGenre( String language, Integer id, int page ){
+        TmdbMoviesPageableResponse response =  this.restClient
+            .get()
+            .uri("/discover/movie?language={language}" +
+            "&with_genres={id}&sort_by=popularity.desc" +
+            "&page={page}", language, id, page )
+            .retrieve()
+            .body( TmdbMoviesPageableResponse.class );
+        return response;
     }
 }
