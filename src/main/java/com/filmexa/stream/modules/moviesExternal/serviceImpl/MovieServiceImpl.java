@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   MovieServiceImpl.java                              :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
+/*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/14 12:33:45 by maddou            #+#    #+#             */
-/*   Updated: 2026/09/16 18:59:40 by kchaouki         ###   ########.fr       */
+/*   Updated: 2026/09/17 14:39:01 by marouan          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,7 +26,6 @@ import com.filmexa.stream.modules.moviesExternal.dto.response.TrendingMoviesResp
 import com.filmexa.stream.modules.moviesExternal.dto.tmdb.TrendingMovieProviderResponse;
 import com.filmexa.stream.modules.moviesExternal.mapper.MovieGenreMapper;
 import com.filmexa.stream.modules.moviesExternal.mapper.MovieMapper;
-import com.filmexa.stream.modules.moviesExternal.mapper.TmdbImageUrlBuilder;
 
 @Service
 public class MovieServiceImpl implements MovieService {
@@ -54,8 +53,8 @@ public class MovieServiceImpl implements MovieService {
             movie.getId(),
             movie.getTitle(),
             movie.getRelease_date(),
-            TmdbImageUrlBuilder.build( this.imageBaseUrl, "w500", movie.getPoster_path() ),
-            TmdbImageUrlBuilder.build( this.imageBaseUrl, "w1280", movie.getBackdrop_path() ),
+            this.imageBaseUrl + movie.getPoster_path(),
+            this.imageBaseUrl + movie.getBackdrop_path(),
             movie.getOverview(),
             movie.getGenre_ids()
                 .stream()

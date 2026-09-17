@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   MovieMapper.java                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
+/*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/16 12:06:56 by marouan           #+#    #+#             */
-/*   Updated: 2026/09/16 18:32:26 by kchaouki         ###   ########.fr       */
+/*   Updated: 2026/09/17 14:37:58 by marouan          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,7 +30,7 @@ public class MovieMapper {
             movieProvider.getId(),
             movieProvider.getTitle(),
             movieProvider.getRelease_date(),
-            TmdbImageUrlBuilder.build( this.imageBaseUrl, "w500", movieProvider.getPoster_path() )
+            this.imageBaseUrl + movieProvider.getPoster_path()
         );
     }
 }
