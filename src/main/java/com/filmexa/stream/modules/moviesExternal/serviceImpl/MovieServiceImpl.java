@@ -6,7 +6,7 @@
 /*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/14 12:33:45 by maddou            #+#    #+#             */
-/*   Updated: 2026/09/17 12:35:55 by marouan          ###   ########.fr       */
+/*   Updated: 2026/09/17 14:46:06 by marouan          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.data.domain.Pageable;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -152,14 +153,14 @@ public class MovieServiceImpl implements MovieService {
         List< MovieResponse > drama,
         List< MovieResponse > romance
     ) {
-        return Map.of(
-            "topRated", topRated,
-            "action", action,
-            "comedy", comedy,
-            "horror", horror,
-            "drama", drama,
-            "romance", romance
-        );
+        Map<String, List<MovieResponse>> homeMovies = new LinkedHashMap<>();
+        homeMovies.put( "topRated", topRated );
+        homeMovies.put( "action", action );
+        homeMovies.put( "comedy", comedy );
+        homeMovies.put( "horror", horror );
+        homeMovies.put( "drama", drama );
+        homeMovies.put( "romance", romance );
+        return homeMovies;
     }
     
 }
