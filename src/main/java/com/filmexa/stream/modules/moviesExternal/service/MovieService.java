@@ -6,7 +6,7 @@
 /*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/14 12:33:09 by maddou            #+#    #+#             */
-/*   Updated: 2026/09/16 13:25:51 by marouan          ###   ########.fr       */
+/*   Updated: 2026/09/17 11:27:23 by marouan          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,12 +15,16 @@ package com.filmexa.stream.modules.moviesExternal.service;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.data.domain.Pageable;
+
 import com.filmexa.stream.modules.moviesExternal.dto.response.TrendingMoviesResponse;
 import com.filmexa.stream.modules.moviesExternal.dto.response.MovieResponse;
+import com.filmexa.stream.modules.moviesExternal.dto.response.MoviePageResponse;
 import com.filmexa.stream.modules.moviesExternal.dto.tmdb.MoviesProviderData;
 
 public interface MovieService {
     List< TrendingMoviesResponse > getTrendingMovies( String language ); 
     Map<String, List<MovieResponse>> buildHomeMovies( String language );
-    // /*List< TrendingMoviesResponse > */void getHomeData( String language ); 
+    List<MovieResponse> getMoviesByGenre( String language, Long id );
+    MoviePageResponse getMoviesByGenre( String language, Integer id, Pageable page );
 }

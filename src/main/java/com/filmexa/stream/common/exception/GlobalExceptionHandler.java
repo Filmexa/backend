@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   GlobalExceptionHandler.java                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: maddou <maddou@student.42.fr>              +#+  +:+       +#+        */
+/*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/30 11:09:53 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/09/14 18:58:34 by maddou           ###   ########.fr       */
+/*   Updated: 2026/09/17 11:34:54 by marouan          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,15 +19,20 @@ import java.lang.Exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import jakarta.validation.ConstraintViolationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
+
 import com.filmexa.stream.common.utils.ErrorResponse;
 import com.filmexa.stream.common.exception.NotFoundException;
+import com.filmexa.stream.common.exception.InvalidPaginationException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -82,6 +87,30 @@ public class GlobalExceptionHandler {
         );
    }
    
+   @ExceptionHandler( InvalidPaginationException.class )
+    public ResponseEntity<ErrorResponse> handleInvalidPagination(
+            InvalidPaginationException ex) {
+
+        return this.builderResponse( 
+            ex.getMessage(),
+            HttpStatus.BAD_REQUEST
+        );
+    }
+    
+    @ExceptionHandler( {
+        MethodArgumentTypeMismatchException.class,
+        ConstraintViolationException.class,
+        // MethodArgumentNotValidException.class
+    })
+    public ResponseEntity<ErrorResponse> handleTypeMismatch(
+            Exception ex ) {
+            
+        return builderResponse(
+            "Invalid request",
+            HttpStatus.BAD_REQUEST
+        );
+    }
+
    @ExceptionHandler( HttpRequestMethodNotSupportedException.class )
     public ResponseEntity<ErrorResponse> handleMethodNotSupported( HttpRequestMethodNotSupportedException ex ) {
             
