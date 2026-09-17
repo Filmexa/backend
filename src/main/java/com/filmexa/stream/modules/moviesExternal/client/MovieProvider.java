@@ -22,4 +22,5 @@ public interface MovieProvider {
     List< MoviesProviderData > getTopRatedMovies( String language );
     List< MoviesProviderData > getMoviesByGenre( String language, Long id );
     TmdbMoviesPageableResponse getMoviesByGenre( String language, Integer id, int page );
+    TmdbMoviesPageableResponse searchMovie( String language, String query, int page );
 }

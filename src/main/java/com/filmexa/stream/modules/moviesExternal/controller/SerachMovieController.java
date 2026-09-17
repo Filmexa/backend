@@ -1,6 +1,6 @@
 package com.filmexa.stream.modules.moviesExternal.controller;
 
-import org.springdoc.core.converters.models.Pageable;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -23,10 +23,10 @@ public class SerachMovieController {
     }
 
     @GetMapping
-    public /*MoviePageResponse*/ void  searchMoviesByTitle( 
+    public MoviePageResponse  searchMoviesByTitle( 
         @Valid @ModelAttribute MovieSearchQuery query,
         Pageable pageable
     ) {
-        
+        return this.movieService.searchMovie( query.getLanguage(), query.getQuery(), pageable );
     }
 }
