@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HomeMoviesResponse.java                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
+/*   By: maddou <maddou@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/16 12:10:40 by marouan           #+#    #+#             */
-/*   Updated: 2026/09/16 13:11:48 by marouan          ###   ########.fr       */
+/*   Updated: 2026/09/17 23:32:12 by maddou           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,9 +18,6 @@ import java.util.Map;
 import lombok.Data;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
-
-
-import com.filmexa.stream.modules.moviesExternal.dto.response.MovieResponse;
 
 @Data
 @AllArgsConstructor

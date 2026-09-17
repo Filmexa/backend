@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   MovieController.java                               :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
+/*   By: maddou <maddou@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/13 10:27:27 by maddou            #+#    #+#             */
-/*   Updated: 2026/09/17 11:27:10 by marouan          ###   ########.fr       */
+/*   Updated: 2026/09/17 23:41:51 by maddou           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,7 +14,6 @@ package com.filmexa.stream.modules.moviesExternal.controller;
 
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -31,7 +30,6 @@ import com.filmexa.stream.modules.moviesExternal.dto.request.MovieQuery;
 import com.filmexa.stream.modules.moviesExternal.dto.response.TrendingMoviesResponse;
 import com.filmexa.stream.modules.moviesExternal.dto.response.MovieResponse;
 import com.filmexa.stream.modules.moviesExternal.dto.response.MoviePageResponse;
-import com.filmexa.stream.modules.moviesExternal.dto.tmdb.MoviesProviderData;
 
 import jakarta.validation.Valid;
 
@@ -73,5 +71,17 @@ public class MovieController {
         Pageable pageable
     ) {
         return this.movieService.getMoviesByGenre( query.getLanguage(), id, pageable );
+    }
+
+    @GetMapping("/{id}")
+    public void getMovieById( @PathVariable 
+        @Positive(message = "ID must be greater than 0") 
+        @Max(Integer.MAX_VALUE)
+        Integer id,
+        
+        @Valid @ModelAttribute MovieQuery query,
+        Pageable pageable
+    ) {
+        
     }
 }

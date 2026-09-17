@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   MovieServiceImpl.java                              :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
+/*   By: maddou <maddou@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/14 12:33:45 by maddou            #+#    #+#             */
-/*   Updated: 2026/09/17 14:46:06 by marouan          ###   ########.fr       */
+/*   Updated: 2026/09/17 23:41:04 by maddou           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -164,6 +164,11 @@ public class MovieServiceImpl implements MovieService {
                 .map( movie -> this.movieMapper.toMovieResponse( movie ) )
                 .toList()
         );
+    }
+
+    @Override
+    /*List<MovieResponse>*/ void  getMoviesById( String language, Integer id ) {
+          
     }
 
     private Map<String, List<MovieResponse>> generateHomeMoviesData(

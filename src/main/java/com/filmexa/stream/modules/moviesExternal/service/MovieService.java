@@ -20,7 +20,6 @@ import org.springframework.data.domain.Pageable;
 import com.filmexa.stream.modules.moviesExternal.dto.response.TrendingMoviesResponse;
 import com.filmexa.stream.modules.moviesExternal.dto.response.MovieResponse;
 import com.filmexa.stream.modules.moviesExternal.dto.response.MoviePageResponse;
-import com.filmexa.stream.modules.moviesExternal.dto.tmdb.MoviesProviderData;
 
 public interface MovieService {
     List< TrendingMoviesResponse > getTrendingMovies( String language ); 
@@ -28,4 +27,5 @@ public interface MovieService {
     List<MovieResponse> getMoviesByGenre( String language, Long id );
     MoviePageResponse getMoviesByGenre( String language, Integer id, Pageable page );
     MoviePageResponse searchMovie( String language, String query, Pageable page );
+    /*List<MovieResponse>*/ void  getMoviesById( String language, Integer id );
 }

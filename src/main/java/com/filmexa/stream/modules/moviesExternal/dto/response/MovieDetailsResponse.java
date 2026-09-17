@@ -1,25 +1,34 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   MovieData.java                                     :+:      :+:    :+:   */
+/*   MovieDetailsResponse.java                          :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
+/*   By: maddou <maddou@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/09/15 18:28:48 by marouan           #+#    #+#             */
-/*   Updated: 2026/09/15 18:36:28 by marouan          ###   ########.fr       */
+/*   Created: 2026/09/17 23:31:37 by maddou            #+#    #+#             */
+/*   Updated: 2026/09/17 23:38:45 by maddou           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-package com.filmexa.stream.modules.moviesExternal.dto.tmdb;
+package com.filmexa.stream.modules.moviesExternal.dto.response;
 
 import lombok.Data;
+
+import java.util.List;
+
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
-import java.util.List;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class MovieData {
-    private List<MoviesProviderData> results;
+public class MovieDetailsResponse {
+    Integer id;
+    String  backdropPath;
+    List< String > genres;
+    String overview;
+    String  releaseDate;
+    String title;
+    String imdbId;
+    List< ActorResponse > actors;
 }

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   TmdbMovieProvider.java                             :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
+/*   By: maddou <maddou@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/13 10:29:13 by maddou            #+#    #+#             */
-/*   Updated: 2026/09/17 11:27:46 by marouan          ###   ########.fr       */
+/*   Updated: 2026/09/17 23:29:15 by maddou           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,6 +23,7 @@ import com.filmexa.stream.modules.moviesExternal.dto.tmdb.TrendingMovieProviderR
 import com.filmexa.stream.modules.moviesExternal.dto.tmdb.TmdbMoviesPageableResponse;
 import com.filmexa.stream.modules.moviesExternal.dto.tmdb.MoviesProviderData;
 import com.filmexa.stream.modules.moviesExternal.dto.tmdb.MovieData;
+import com.filmexa.stream.modules.moviesExternal.dto.tmdb.MovieProvederData;
 
 import java.util.List;
 
@@ -95,5 +96,15 @@ public class TmdbMovieProvider implements MovieProvider {
             .retrieve()
             .body( TmdbMoviesPageableResponse.class );
         return response;
+    }
+
+    @Override
+    MovieProvederData getMovieById( String language, Integer id ) {
+        MovieProvederData movieData = this.restClient
+            .get()
+            .uri("/movie/{id}?append_to_response=credits&language={language}", id, language )
+            .retrieve()
+            .body( MovieProvederData.class );
+        return movieData;
     }
 }
