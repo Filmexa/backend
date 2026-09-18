@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   TmdbMovieProvider.java                             :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
+/*   By: maddou <maddou@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/13 10:29:13 by maddou            #+#    #+#             */
-/*   Updated: 2026/09/17 11:27:46 by marouan          ###   ########.fr       */
+/*   Updated: 2026/09/18 02:44:13 by maddou           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,12 +17,14 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.client.RestClient;
 import org.springframework.core.ParameterizedTypeReference;
 
+import com.filmexa.stream.common.exception.NotFoundException;
 import com.filmexa.stream.modules.moviesExternal.client.MovieProvider;
 import com.filmexa.stream.modules.moviesExternal.dto.tmdb.TmdbTrendingMoviesResponse;
 import com.filmexa.stream.modules.moviesExternal.dto.tmdb.TrendingMovieProviderResponse;
 import com.filmexa.stream.modules.moviesExternal.dto.tmdb.TmdbMoviesPageableResponse;
 import com.filmexa.stream.modules.moviesExternal.dto.tmdb.MoviesProviderData;
 import com.filmexa.stream.modules.moviesExternal.dto.tmdb.MovieData;
+import com.filmexa.stream.modules.moviesExternal.dto.tmdb.MovieProvederData;
 
 import java.util.List;
 
@@ -82,5 +84,36 @@ public class TmdbMovieProvider implements MovieProvider {
             .retrieve()
             .body( TmdbMoviesPageableResponse.class );
         return response;
+    }
+
+    @Override
+    public TmdbMoviesPageableResponse searchMovie( String language, String query, int page ){
+        TmdbMoviesPageableResponse response =  this.restClient
+            .get()
+            .uri("/search/movie?language={language}" +
+            "&sort_by=popularity.desc" +
+            "&query={query}" +
+            "&page={page}", language, query, page )
+            .retrieve()
+            .body( TmdbMoviesPageableResponse.class );
+        return response;
+    }
+// ?append_to_response=credits&language={language}"
+    @Override
+    public MovieProvederData getMovieById( String language, Integer id ) {
+        MovieProvederData movieData = this.restClient
+            .get()
+            .uri("/movie/{id}?append_to_response=credits&language={language}", 
+                id, 
+                language )
+            .retrieve()
+            .onStatus(
+                status -> status.value() == 404,
+                (request, response) -> {
+                    throw new NotFoundException("Movie does not exist");
+                }
+            )
+            .body( MovieProvederData.class );
+        return movieData;
     }
 }

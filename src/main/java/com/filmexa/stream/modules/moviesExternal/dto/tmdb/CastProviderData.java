@@ -1,25 +1,28 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   MovieData.java                                     :+:      :+:    :+:   */
+/*   CastProviderData.java                              :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
+/*   By: maddou <maddou@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/09/15 18:28:48 by marouan           #+#    #+#             */
-/*   Updated: 2026/09/15 18:36:28 by marouan          ###   ########.fr       */
+/*   Created: 2026/09/17 23:20:37 by maddou            #+#    #+#             */
+/*   Updated: 2026/09/17 23:22:12 by maddou           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 package com.filmexa.stream.modules.moviesExternal.dto.tmdb;
 
+
 import lombok.Data;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
-import java.util.List;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class MovieData {
-    private List<MoviesProviderData> results;
+public class CastProviderData {
+    Integer     id;
+    String      name;
+    String      profile_path;
+    String      character;        
 }
