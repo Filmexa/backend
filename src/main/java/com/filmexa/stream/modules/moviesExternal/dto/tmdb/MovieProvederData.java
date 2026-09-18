@@ -1,25 +1,35 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   MovieData.java                                     :+:      :+:    :+:   */
+/*   MovieProvederData.java                             :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
+/*   By: maddou <maddou@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/09/15 18:28:48 by marouan           #+#    #+#             */
-/*   Updated: 2026/09/15 18:36:28 by marouan          ###   ########.fr       */
+/*   Created: 2026/09/17 23:07:04 by marouan           #+#    #+#             */
+/*   Updated: 2026/09/18 02:31:19 by maddou           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 package com.filmexa.stream.modules.moviesExternal.dto.tmdb;
 
+
 import lombok.Data;
+
+import java.util.List;
+
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
-import java.util.List;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class MovieData {
-    private List<MoviesProviderData> results;
+public class MovieProvederData {
+    Integer     id;
+    String      title;
+    String      backdrop_path; 
+    String      imdb_id;
+    List< GenreProviderData > genres;
+    String      overview; 
+    String      release_date;
+    MovieCreditsProviderData    credits;
 }
