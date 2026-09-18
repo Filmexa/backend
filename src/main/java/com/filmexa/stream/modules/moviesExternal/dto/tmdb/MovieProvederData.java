@@ -6,7 +6,7 @@
 /*   By: maddou <maddou@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/17 23:07:04 by marouan           #+#    #+#             */
-/*   Updated: 2026/09/17 23:24:50 by maddou           ###   ########.fr       */
+/*   Updated: 2026/09/18 02:31:19 by maddou           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,5 +31,5 @@ public class MovieProvederData {
     List< GenreProviderData > genres;
     String      overview; 
     String      release_date;
-    MovieCreditsProviderData    Credits;
+    MovieCreditsProviderData    credits;
 }

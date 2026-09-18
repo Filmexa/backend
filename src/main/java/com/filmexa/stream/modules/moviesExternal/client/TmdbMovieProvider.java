@@ -6,7 +6,7 @@
 /*   By: maddou <maddou@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/13 10:29:13 by maddou            #+#    #+#             */
-/*   Updated: 2026/09/17 23:29:15 by maddou           ###   ########.fr       */
+/*   Updated: 2026/09/18 02:32:00 by maddou           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -97,12 +97,14 @@ public class TmdbMovieProvider implements MovieProvider {
             .body( TmdbMoviesPageableResponse.class );
         return response;
     }
-
+// ?append_to_response=credits&language={language}"
     @Override
-    MovieProvederData getMovieById( String language, Integer id ) {
+    public MovieProvederData getMovieById( String language, Integer id ) {
         MovieProvederData movieData = this.restClient
             .get()
-            .uri("/movie/{id}?append_to_response=credits&language={language}", id, language )
+            .uri("/movie/{id}?append_to_response=credits&language={language}", 
+                id, 
+                language )
             .retrieve()
             .body( MovieProvederData.class );
         return movieData;

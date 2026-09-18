@@ -6,7 +6,7 @@
 /*   By: maddou <maddou@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/08 18:34:10 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/09/14 20:35:43 by maddou           ###   ########.fr       */
+/*   Updated: 2026/09/18 00:06:55 by maddou           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -72,6 +72,7 @@ public class SecurityConfig {
 			"/api/movie-categories/**",
 			"/api/movies/trending/week",
 			"/api/movies/home",
+			"/api/movies/*",
 			"/api/search/**",
 			
 	};

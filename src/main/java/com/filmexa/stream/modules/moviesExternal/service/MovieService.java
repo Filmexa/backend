@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   MovieService.java                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
+/*   By: maddou <maddou@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/14 12:33:09 by maddou            #+#    #+#             */
-/*   Updated: 2026/09/17 11:27:23 by marouan          ###   ########.fr       */
+/*   Updated: 2026/09/18 02:32:47 by maddou           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,6 +19,7 @@ import org.springframework.data.domain.Pageable;
 
 import com.filmexa.stream.modules.moviesExternal.dto.response.TrendingMoviesResponse;
 import com.filmexa.stream.modules.moviesExternal.dto.response.MovieResponse;
+import com.filmexa.stream.modules.moviesExternal.dto.response.MovieDetailsResponse;
 import com.filmexa.stream.modules.moviesExternal.dto.response.MoviePageResponse;
 
 public interface MovieService {
@@ -27,5 +28,5 @@ public interface MovieService {
     List<MovieResponse> getMoviesByGenre( String language, Long id );
     MoviePageResponse getMoviesByGenre( String language, Integer id, Pageable page );
     MoviePageResponse searchMovie( String language, String query, Pageable page );
-    /*List<MovieResponse>*/ void  getMoviesById( String language, Integer id );
+    MovieDetailsResponse getMovieById( String language, Integer id );
 }

@@ -6,7 +6,7 @@
 /*   By: maddou <maddou@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/13 10:27:27 by maddou            #+#    #+#             */
-/*   Updated: 2026/09/17 23:41:51 by maddou           ###   ########.fr       */
+/*   Updated: 2026/09/18 02:33:08 by maddou           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,6 +29,7 @@ import com.filmexa.stream.modules.moviesExternal.service.MovieService;
 import com.filmexa.stream.modules.moviesExternal.dto.request.MovieQuery;
 import com.filmexa.stream.modules.moviesExternal.dto.response.TrendingMoviesResponse;
 import com.filmexa.stream.modules.moviesExternal.dto.response.MovieResponse;
+import com.filmexa.stream.modules.moviesExternal.dto.response.MovieDetailsResponse;
 import com.filmexa.stream.modules.moviesExternal.dto.response.MoviePageResponse;
 
 import jakarta.validation.Valid;
@@ -74,7 +75,7 @@ public class MovieController {
     }
 
     @GetMapping("/{id}")
-    public void getMovieById( @PathVariable 
+    public MovieDetailsResponse getMovieById( @PathVariable 
         @Positive(message = "ID must be greater than 0") 
         @Max(Integer.MAX_VALUE)
         Integer id,
@@ -82,6 +83,6 @@ public class MovieController {
         @Valid @ModelAttribute MovieQuery query,
         Pageable pageable
     ) {
-        
+        return this.movieService.getMovieById( query.getLanguage(), id );
     }
 }
