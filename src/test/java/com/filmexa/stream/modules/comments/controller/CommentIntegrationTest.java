@@ -61,8 +61,8 @@ class CommentIntegrationTest extends AbstractIntegrationTest {
                         .header("Authorization", "Bearer " + user.accessToken())
                         .param("page", "0").param("size", "20"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[0].content").value("Second comment"))
-                .andExpect(jsonPath("$.content[1].content").value("First comment"));
+                .andExpect(jsonPath("$.content[0].content").value("First comment"))
+                .andExpect(jsonPath("$.content[1].content").value("Second comment"));
     }
 
     @Test
