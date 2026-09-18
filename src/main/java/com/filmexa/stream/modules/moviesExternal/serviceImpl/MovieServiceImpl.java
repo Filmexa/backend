@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   MovieServiceImpl.java                              :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
+/*   By: maddou <maddou@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/14 12:33:45 by maddou            #+#    #+#             */
-/*   Updated: 2026/09/17 14:46:06 by marouan          ###   ########.fr       */
+/*   Updated: 2026/09/18 02:32:35 by maddou           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,10 +24,13 @@ import com.filmexa.stream.common.exception.NotFoundException;
 import com.filmexa.stream.modules.moviesExternal.service.MovieService;
 import com.filmexa.stream.modules.moviesExternal.client.MovieProvider;
 import com.filmexa.stream.modules.moviesExternal.dto.response.MovieResponse;
+import com.filmexa.stream.modules.moviesExternal.dto.response.ActorResponse;
+import com.filmexa.stream.modules.moviesExternal.dto.response.MovieDetailsResponse;
 import com.filmexa.stream.modules.moviesExternal.dto.response.MoviePageResponse;
 import com.filmexa.stream.modules.moviesExternal.dto.response.TrendingMoviesResponse;
 import com.filmexa.stream.modules.moviesExternal.dto.tmdb.TrendingMovieProviderResponse;
 import com.filmexa.stream.modules.moviesExternal.dto.tmdb.TmdbMoviesPageableResponse;
+import com.filmexa.stream.modules.moviesExternal.dto.tmdb.MovieProvederData;
 import com.filmexa.stream.modules.moviesExternal.dto.tmdb.MoviesProviderData;
 import com.filmexa.stream.modules.moviesExternal.mapper.MovieGenreMapper;
 import com.filmexa.stream.modules.moviesExternal.mapper.MovieMapper;
@@ -60,8 +63,8 @@ public class MovieServiceImpl implements MovieService {
             movie.getId(),
             movie.getTitle(),
             movie.getRelease_date(),
-            this.imageBaseUrl + movie.getPoster_path(),
-            this.imageBaseUrl + movie.getBackdrop_path(),
+            movie.getPoster_path() != null ? this.imageBaseUrl + movie.getPoster_path() : "",
+            movie.getBackdrop_path() != null ? this.imageBaseUrl + movie.getBackdrop_path() : "",
             movie.getOverview(),
             movie.getGenre_ids()
                 .stream()
@@ -144,7 +147,60 @@ public class MovieServiceImpl implements MovieService {
         );
         return result;
     }
-    
+    @Override
+    public MoviePageResponse searchMovie( String language, String query, Pageable page ) {
+        // validate page 
+        int pageNumber = page.getPageNumber() == 0 ? 1 : page.getPageNumber();
+        if ( pageNumber > 1 || pageNumber < 1 ) {
+            throw new InvalidPaginationException( "Invalid page: Pages start at 1 and max at 500. They are expected to be an integer." );
+        }
+        // get data from provider
+        TmdbMoviesPageableResponse providerResult = movieProvider.searchMovie( language, query, pageNumber );
+        
+        // Return movie data
+        return new MoviePageResponse(
+            providerResult.getPage(),
+            1,
+            providerResult.getResults().size(),
+            providerResult.getResults()
+                .stream()
+                .map( movie -> this.movieMapper.toMovieResponse( movie ) )
+                .toList()
+        );
+    }
+
+    @Override
+    public MovieDetailsResponse getMovieById( String language, Integer id ) {
+
+        // Fetch details from provider 
+        MovieProvederData movieDetails = this.movieProvider.getMovieById( language, id ); 
+        // convert to application actors and limited to 10
+        List< ActorResponse > actors =   movieDetails.getCredits().getCast()
+            .stream()
+            .limit(10)
+            .map( movie -> new ActorResponse(
+                movie.getId(),
+                movie.getName(),
+                movie.getProfile_path() != null ? this.imageBaseUrl + movie.getProfile_path() : null,
+                movie.getCharacter()
+            )).toList();
+        List< String > genres = movieDetails.getGenres()
+            .stream()
+            .map( genre -> genre.getName() )
+            .toList();
+        // generate movies details application 
+        return new MovieDetailsResponse(
+            movieDetails.getId(),
+            movieDetails.getBackdrop_path() != null ? this.imageBaseUrl + movieDetails.getBackdrop_path() : null,
+            genres,
+            movieDetails.getOverview(),
+            movieDetails.getRelease_date(),
+            movieDetails.getTitle(),
+            movieDetails.getImdb_id(),
+            actors
+        );
+    }
+
     private Map<String, List<MovieResponse>> generateHomeMoviesData(
         List< MovieResponse > topRated,
         List< MovieResponse > action,

@@ -15,7 +15,6 @@ package com.filmexa.stream.modules.moviesExternal.dto.tmdb;
 import lombok.Data;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
-import java.util.List;
 import java.time.LocalDate;
 
 @Data
