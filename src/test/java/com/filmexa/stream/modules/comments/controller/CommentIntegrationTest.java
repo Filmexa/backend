@@ -38,7 +38,7 @@ class CommentIntegrationTest extends AbstractIntegrationTest {
     void createAndListComments_shouldReturnNewestFirst() throws Exception {
         RegisteredUser user = registerUser("commenter1");
 
-        mockMvc.perform(post("/api/movies/101/comments")
+        mockMvc.perform(post("/api/movie/101/comments")
                         .header("Authorization", "Bearer " + user.accessToken())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -49,7 +49,7 @@ class CommentIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.movieId").value(101))
                 .andExpect(jsonPath("$.author.username").value("commenter1"));
 
-        mockMvc.perform(post("/api/movies/101/comments")
+        mockMvc.perform(post("/api/movie/101/comments")
                         .header("Authorization", "Bearer " + user.accessToken())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -57,7 +57,7 @@ class CommentIntegrationTest extends AbstractIntegrationTest {
                                 """))
                 .andExpect(status().isCreated());
 
-        mockMvc.perform(get("/api/movies/101/comments")
+        mockMvc.perform(get("/api/movie/101/comments")
                         .header("Authorization", "Bearer " + user.accessToken())
                         .param("page", "0").param("size", "20"))
                 .andExpect(status().isOk())
@@ -69,7 +69,7 @@ class CommentIntegrationTest extends AbstractIntegrationTest {
     void createComment_shouldReturnBadRequest_whenContentBlank() throws Exception {
         RegisteredUser user = registerUser("commenter2");
 
-        mockMvc.perform(post("/api/movies/101/comments")
+        mockMvc.perform(post("/api/movie/101/comments")
                         .header("Authorization", "Bearer " + user.accessToken())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -83,7 +83,7 @@ class CommentIntegrationTest extends AbstractIntegrationTest {
         RegisteredUser author = registerUser("commenter3");
         RegisteredUser other = registerUser("commenter4");
 
-        String created = mockMvc.perform(post("/api/movies/202/comments")
+        String created = mockMvc.perform(post("/api/movie/202/comments")
                         .header("Authorization", "Bearer " + author.accessToken())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -93,7 +93,7 @@ class CommentIntegrationTest extends AbstractIntegrationTest {
                 .andReturn().getResponse().getContentAsString();
         String commentId = objectMapper.readTree(created).get("id").asText();
 
-        mockMvc.perform(patch("/api/movies/202/comments/" + commentId)
+        mockMvc.perform(patch("/api/movie/202/comments/" + commentId)
                         .header("Authorization", "Bearer " + other.accessToken())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -101,7 +101,7 @@ class CommentIntegrationTest extends AbstractIntegrationTest {
                                 """))
                 .andExpect(status().isForbidden());
 
-        mockMvc.perform(patch("/api/movies/202/comments/" + commentId)
+        mockMvc.perform(patch("/api/movie/202/comments/" + commentId)
                         .header("Authorization", "Bearer " + author.accessToken())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -110,15 +110,15 @@ class CommentIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").value("Edited"));
 
-        mockMvc.perform(delete("/api/movies/202/comments/" + commentId)
+        mockMvc.perform(delete("/api/movie/202/comments/" + commentId)
                         .header("Authorization", "Bearer " + other.accessToken()))
                 .andExpect(status().isForbidden());
 
-        mockMvc.perform(delete("/api/movies/202/comments/" + commentId)
+        mockMvc.perform(delete("/api/movie/202/comments/" + commentId)
                         .header("Authorization", "Bearer " + author.accessToken()))
                 .andExpect(status().isNoContent());
 
-        mockMvc.perform(get("/api/movies/202/comments")
+        mockMvc.perform(get("/api/movie/202/comments")
                         .header("Authorization", "Bearer " + author.accessToken()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isEmpty());
@@ -126,7 +126,7 @@ class CommentIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void createComment_shouldReturnForbidden_whenNotAuthenticated() throws Exception {
-        mockMvc.perform(post("/api/movies/101/comments")
+        mockMvc.perform(post("/api/movie/101/comments")
                         .header("Authorization", "Bearer " + "not valide token")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
