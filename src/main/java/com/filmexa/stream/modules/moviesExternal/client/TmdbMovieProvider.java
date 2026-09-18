@@ -6,7 +6,7 @@
 /*   By: maddou <maddou@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/13 10:29:13 by maddou            #+#    #+#             */
-/*   Updated: 2026/09/18 02:32:00 by maddou           ###   ########.fr       */
+/*   Updated: 2026/09/18 02:44:13 by maddou           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.client.RestClient;
 import org.springframework.core.ParameterizedTypeReference;
 
+import com.filmexa.stream.common.exception.NotFoundException;
 import com.filmexa.stream.modules.moviesExternal.client.MovieProvider;
 import com.filmexa.stream.modules.moviesExternal.dto.tmdb.TmdbTrendingMoviesResponse;
 import com.filmexa.stream.modules.moviesExternal.dto.tmdb.TrendingMovieProviderResponse;
@@ -106,6 +107,12 @@ public class TmdbMovieProvider implements MovieProvider {
                 id, 
                 language )
             .retrieve()
+            .onStatus(
+                status -> status.value() == 404,
+                (request, response) -> {
+                    throw new NotFoundException("Movie does not exist");
+                }
+            )
             .body( MovieProvederData.class );
         return movieData;
     }
