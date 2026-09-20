@@ -6,7 +6,7 @@
 /*   By: maddou <maddou@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/14 12:33:45 by maddou            #+#    #+#             */
-/*   Updated: 2026/09/20 01:03:21 by maddou           ###   ########.fr       */
+/*   Updated: 2026/09/20 01:12:13 by maddou           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,10 +22,11 @@ import java.util.Map;
 
 import com.filmexa.stream.common.exception.NotFoundException;
 import com.filmexa.stream.modules.moviesExternal.service.MovieService;
-import com.filmexa.stream.modules.movie.entity.Movie;
 import com.filmexa.stream.modules.moviesExternal.client.MovieProvider;
 import com.filmexa.stream.modules.moviesExternal.dto.response.MovieResponse;
 import com.filmexa.stream.modules.moviesExternal.dto.request.MovieSearchQuery;
+import com.filmexa.stream.modules.moviesExternal.dto.response.ActorResponse;
+import com.filmexa.stream.modules.moviesExternal.dto.response.MovieDetailsResponse;
 import com.filmexa.stream.modules.moviesExternal.dto.response.MoviePageResponse;
 import com.filmexa.stream.modules.moviesExternal.dto.response.TrendingMoviesResponse;
 import com.filmexa.stream.modules.moviesExternal.dto.tmdb.MovieDetailsProviderData;
@@ -33,7 +34,7 @@ import com.filmexa.stream.modules.moviesExternal.dto.tmdb.MovieDetailsProviderRe
 import com.filmexa.stream.modules.moviesExternal.dto.tmdb.request.TmdbMovieDiscoverRequest;
 import com.filmexa.stream.modules.moviesExternal.enums.MovieSort;
 import com.filmexa.stream.modules.moviesExternal.dto.tmdb.TmdbMoviesPageableResponse;
-import com.filmexa.stream.modules.moviesExternal.dto.tmdb.MoviesProviderData;
+import com.filmexa.stream.modules.moviesExternal.dto.tmdb.MovieProvederData;
 import com.filmexa.stream.modules.moviesExternal.mapper.MovieGenreMapper;
 import com.filmexa.stream.modules.moviesExternal.mapper.MovieMapper;
 
@@ -190,6 +191,38 @@ public class MovieServiceImpl implements MovieService {
         );
         
         return filtredMovies;
+    }
+
+    @Override
+    public MovieDetailsResponse getMovieById( String language, Integer id ) {
+
+        // Fetch details from provider 
+        MovieProvederData movieDetails = this.movieProvider.getMovieById( language, id ); 
+        // convert to application actors and limited to 10
+        List< ActorResponse > actors =   movieDetails.getCredits().getCast()
+            .stream()
+            .limit(10)
+            .map( movie -> new ActorResponse(
+                movie.getId(),
+                movie.getName(),
+                movie.getProfile_path() != null ? this.imageBaseUrl + movie.getProfile_path() : null,
+                movie.getCharacter()
+            )).toList();
+        List< String > genres = movieDetails.getGenres()
+            .stream()
+            .map( genre -> genre.getName() )
+            .toList();
+        // generate movies details application 
+        return new MovieDetailsResponse(
+            movieDetails.getId(),
+            movieDetails.getBackdrop_path() != null ? this.imageBaseUrl + movieDetails.getBackdrop_path() : null,
+            genres,
+            movieDetails.getOverview(),
+            movieDetails.getRelease_date(),
+            movieDetails.getTitle(),
+            movieDetails.getImdb_id(),
+            actors
+        );
     }
 
     private Map<String, List<MovieResponse>> generateHomeMoviesData(

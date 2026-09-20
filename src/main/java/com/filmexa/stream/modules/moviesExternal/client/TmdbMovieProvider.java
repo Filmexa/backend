@@ -6,7 +6,7 @@
 /*   By: maddou <maddou@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/13 10:29:13 by maddou            #+#    #+#             */
-/*   Updated: 2026/09/20 00:32:04 by maddou           ###   ########.fr       */
+/*   Updated: 2026/09/20 01:12:47 by maddou           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,6 +24,8 @@ import com.filmexa.stream.modules.moviesExternal.dto.tmdb.TmdbMoviesPageableResp
 import com.filmexa.stream.modules.moviesExternal.dto.tmdb.MoviesProviderData;
 import com.filmexa.stream.modules.moviesExternal.dto.tmdb.MovieData;
 import com.filmexa.stream.modules.moviesExternal.dto.tmdb.MovieDetailsProviderData;
+import com.filmexa.stream.common.exception.NotFoundException;
+import com.filmexa.stream.modules.moviesExternal.dto.tmdb.MovieProvederData;
 
 import java.util.List;
 
@@ -133,4 +135,22 @@ public TmdbMoviesPageableResponse discoverMovies(
             .retrieve()
             .body( TmdbMoviesPageableResponse.class );
 }
+// ?append_to_response=credits&language={language}"
+    @Override
+    public MovieProvederData getMovieById( String language, Integer id ) {
+        MovieProvederData movieData = this.restClient
+            .get()
+            .uri("/movie/{id}?append_to_response=credits&language={language}", 
+                id, 
+                language )
+            .retrieve()
+            .onStatus(
+                status -> status.value() == 404,
+                (request, response) -> {
+                    throw new NotFoundException("Movie does not exist");
+                }
+            )
+            .body( MovieProvederData.class );
+        return movieData;
+    }
 }
