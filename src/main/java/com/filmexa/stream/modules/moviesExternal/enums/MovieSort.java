@@ -1,30 +1,19 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   MovieResponse.java                                 :+:      :+:    :+:   */
+/*   MovieSort.java                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: maddou <maddou@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/09/16 12:16:00 by marouan           #+#    #+#             */
-/*   Updated: 2026/09/20 00:04:44 by maddou           ###   ########.fr       */
+/*   Created: 2026/09/19 20:37:05 by maddou            #+#    #+#             */
+/*   Updated: 2026/09/19 20:37:07 by maddou           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-package com.filmexa.stream.modules.moviesExternal.dto.response;
+package com.filmexa.stream.modules.moviesExternal.enums;
 
-import java.util.List;
-import java.time.LocalDate;
-
-import lombok.Data;
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
-
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
-public class MovieResponse {
-    Long        id;
-    String      title;
-    String   releaseDate;
-    String      thumbnail;
+public enum MovieSort {
+    POPULARITY,
+    RATING,
+    RELEASE_DATE
 }
