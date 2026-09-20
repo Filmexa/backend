@@ -1,27 +1,26 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   MoviesProviderData.java                                    :+:      :+:    :+:   */
+/*   SearchByQuery.java                                 :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
+/*   By: maddou <maddou@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/09/15 18:26:39 by marouan           #+#    #+#             */
-/*   Updated: 2026/09/15 18:27:02 by marouan          ###   ########.fr       */
+/*   Created: 2026/09/19 20:23:36 by maddou            #+#    #+#             */
+/*   Updated: 2026/09/19 21:20:14 by maddou           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 package com.filmexa.stream.modules.moviesExternal.dto.tmdb;
 
-import lombok.Data;
+import java.util.List;
+
 import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.NoArgsConstructor;
 
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
-public class MoviesProviderData {
-    Long    id;
-    String  title;
-    String  release_date;
-    String  poster_path;
+@Data 
+@AllArgsConstructor 
+@NoArgsConstructor 
+public class SearchByQuery {
+    List< MoviesProviderData > results;
 }

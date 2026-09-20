@@ -1,12 +1,12 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   TmdbTrendingMoviesResponse.java                    :+:      :+:    :+:   */
+/*   MovieDetailsProviderResponse.java                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: maddou <maddou@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/09/14 19:06:57 by maddou            #+#    #+#             */
-/*   Updated: 2026/09/14 19:09:03 by maddou           ###   ########.fr       */
+/*   Created: 2026/09/14 12:51:10 by maddou            #+#    #+#             */
+/*   Updated: 2026/09/14 12:51:10 by maddou           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,11 +17,15 @@ import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import java.util.List;
 
-import com.filmexa.stream.modules.moviesExternal.dto.tmdb.TrendingMovieProviderResponse;
-
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class TmdbTrendingMoviesResponse {
-    private List<TrendingMovieProviderResponse> results;
+public class MovieDetailsProviderResponse {
+    Long    id;
+    String  title;
+    String  release_date;
+    String  poster_path;
+    String  backdrop_path;
+    String  overview;
+    List<Integer> genre_ids;
 }

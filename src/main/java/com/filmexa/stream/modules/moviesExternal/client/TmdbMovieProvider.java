@@ -6,7 +6,7 @@
 /*   By: maddou <maddou@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/13 10:29:13 by maddou            #+#    #+#             */
-/*   Updated: 2026/09/18 02:44:13 by maddou           ###   ########.fr       */
+/*   Updated: 2026/09/20 01:12:47 by maddou           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,15 +15,16 @@ package com.filmexa.stream.modules.moviesExternal.client;
 import org.springframework.stereotype.Component;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.client.RestClient;
-import org.springframework.core.ParameterizedTypeReference;
 
-import com.filmexa.stream.common.exception.NotFoundException;
-import com.filmexa.stream.modules.moviesExternal.client.MovieProvider;
-import com.filmexa.stream.modules.moviesExternal.dto.tmdb.TmdbTrendingMoviesResponse;
-import com.filmexa.stream.modules.moviesExternal.dto.tmdb.TrendingMovieProviderResponse;
+import com.filmexa.stream.modules.moviesExternal.dto.tmdb.MoviesDetailsResponse;
+import com.filmexa.stream.modules.moviesExternal.dto.tmdb.MovieDetailsProviderResponse;
+import com.filmexa.stream.modules.moviesExternal.dto.tmdb.MoviesDetailsPageableResponse;
+import com.filmexa.stream.modules.moviesExternal.dto.tmdb.request.TmdbMovieDiscoverRequest;
 import com.filmexa.stream.modules.moviesExternal.dto.tmdb.TmdbMoviesPageableResponse;
 import com.filmexa.stream.modules.moviesExternal.dto.tmdb.MoviesProviderData;
 import com.filmexa.stream.modules.moviesExternal.dto.tmdb.MovieData;
+import com.filmexa.stream.modules.moviesExternal.dto.tmdb.MovieDetailsProviderData;
+import com.filmexa.stream.common.exception.NotFoundException;
 import com.filmexa.stream.modules.moviesExternal.dto.tmdb.MovieProvederData;
 
 import java.util.List;
@@ -38,12 +39,12 @@ public class TmdbMovieProvider implements MovieProvider {
     }
 
     @Override
-    public List< TrendingMovieProviderResponse > getTrendingMovies( String language ){
-        TmdbTrendingMoviesResponse response =  this.restClient
+    public List< MovieDetailsProviderResponse > getTrendingMovies( String language ){
+        MoviesDetailsResponse response =  this.restClient
             .get()
             .uri("/trending/movie/week?language={language}", language)
             .retrieve()
-            .body( TmdbTrendingMoviesResponse.class );
+            .body( MoviesDetailsResponse.class );
         return response.getResults();
     }
 
@@ -79,7 +80,7 @@ public class TmdbMovieProvider implements MovieProvider {
         TmdbMoviesPageableResponse response =  this.restClient
             .get()
             .uri("/discover/movie?language={language}" +
-            "&with_genres={id}&sort_by=popularity.desc" +
+            "&with_genres={id}" +
             "&page={page}", language, id, page )
             .retrieve()
             .body( TmdbMoviesPageableResponse.class );
@@ -91,13 +92,49 @@ public class TmdbMovieProvider implements MovieProvider {
         TmdbMoviesPageableResponse response =  this.restClient
             .get()
             .uri("/search/movie?language={language}" +
-            "&sort_by=popularity.desc" +
             "&query={query}" +
             "&page={page}", language, query, page )
             .retrieve()
             .body( TmdbMoviesPageableResponse.class );
         return response;
     }
+    
+    @Override
+    public /*List<MoviesProviderData>*/List<MovieDetailsProviderData> searchMovieByQuery( String language, String query, Integer year, int page ){
+        /*SearchByQuery*/MoviesDetailsPageableResponse response =  this.restClient
+        .get()
+        .uri("/search/movie?language={language}" +
+            "&query={query}" +
+            "&page={page}" +
+            "&year={year}", language, query, page, year )
+            .retrieve()
+            .body( MoviesDetailsPageableResponse.class );
+        
+        return response.getResults();
+    }
+
+    @Override
+public TmdbMoviesPageableResponse discoverMovies(
+        TmdbMovieDiscoverRequest request
+) {
+    return this.restClient.get()
+            .uri(
+                "/discover/movie?language={language}" +
+                "&with_genres={genreId}" +
+                "&year={year}" +
+                "&vote_average.gte={minRating}" +
+                "&sort_by={sortBy}" +
+                "&page={page}",
+                request.getLanguage(),
+                request.getGenreId(),
+                request.getYear(),
+                request.getMinRating(),
+                request.getSortBy(),
+                request.getPage()
+            )
+            .retrieve()
+            .body( TmdbMoviesPageableResponse.class );
+}
 // ?append_to_response=credits&language={language}"
     @Override
     public MovieProvederData getMovieById( String language, Integer id ) {

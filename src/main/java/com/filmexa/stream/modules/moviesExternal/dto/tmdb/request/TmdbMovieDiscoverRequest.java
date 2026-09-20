@@ -1,31 +1,29 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   TrendingMovieProviderResponse.java                        :+:      :+:    :+:   */
+/*   TmdbMovieDiscoverRequest.java                      :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: maddou <maddou@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/09/14 12:51:10 by maddou            #+#    #+#             */
-/*   Updated: 2026/09/14 12:51:10 by maddou           ###   ########.fr       */
+/*   Created: 2026/09/19 21:25:44 by maddou            #+#    #+#             */
+/*   Updated: 2026/09/20 00:28:05 by maddou           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-package com.filmexa.stream.modules.moviesExternal.dto.tmdb;
+package com.filmexa.stream.modules.moviesExternal.dto.tmdb.request;
 
-import lombok.Data;
 import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import java.util.List;
 
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
-public class TrendingMovieProviderResponse {
-    Long    id;
-    String  title;
-    String  release_date;
-    String  poster_path;
-    String  backdrop_path;
-    String  overview;
-    List<Integer> genre_ids;
+@Data 
+@AllArgsConstructor 
+@NoArgsConstructor 
+public class TmdbMovieDiscoverRequest {
+    String language;
+    Integer genreId;
+    Integer year;
+    Double minRating;
+    String sortBy;
+    int page;
 }
