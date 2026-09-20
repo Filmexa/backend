@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   MovieServiceImpl.java                              :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
+/*   By: maddou <maddou@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/14 12:33:45 by maddou            #+#    #+#             */
-/*   Updated: 2026/09/17 14:46:06 by marouan          ###   ########.fr       */
+/*   Updated: 2026/09/20 01:03:21 by maddou           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,11 +22,16 @@ import java.util.Map;
 
 import com.filmexa.stream.common.exception.NotFoundException;
 import com.filmexa.stream.modules.moviesExternal.service.MovieService;
+import com.filmexa.stream.modules.movie.entity.Movie;
 import com.filmexa.stream.modules.moviesExternal.client.MovieProvider;
 import com.filmexa.stream.modules.moviesExternal.dto.response.MovieResponse;
+import com.filmexa.stream.modules.moviesExternal.dto.request.MovieSearchQuery;
 import com.filmexa.stream.modules.moviesExternal.dto.response.MoviePageResponse;
 import com.filmexa.stream.modules.moviesExternal.dto.response.TrendingMoviesResponse;
-import com.filmexa.stream.modules.moviesExternal.dto.tmdb.TrendingMovieProviderResponse;
+import com.filmexa.stream.modules.moviesExternal.dto.tmdb.MovieDetailsProviderData;
+import com.filmexa.stream.modules.moviesExternal.dto.tmdb.MovieDetailsProviderResponse;
+import com.filmexa.stream.modules.moviesExternal.dto.tmdb.request.TmdbMovieDiscoverRequest;
+import com.filmexa.stream.modules.moviesExternal.enums.MovieSort;
 import com.filmexa.stream.modules.moviesExternal.dto.tmdb.TmdbMoviesPageableResponse;
 import com.filmexa.stream.modules.moviesExternal.dto.tmdb.MoviesProviderData;
 import com.filmexa.stream.modules.moviesExternal.mapper.MovieGenreMapper;
@@ -53,7 +58,7 @@ public class MovieServiceImpl implements MovieService {
     @Override
     public List< TrendingMoviesResponse > getTrendingMovies( String language) {
 
-        List< TrendingMovieProviderResponse > providerMovies = movieProvider.getTrendingMovies( language );
+        List< MovieDetailsProviderResponse > providerMovies = movieProvider.getTrendingMovies( language );
         return providerMovies.stream()
         .limit(10)
         .map(movie -> new TrendingMoviesResponse(
@@ -145,25 +150,46 @@ public class MovieServiceImpl implements MovieService {
         return result;
     }
     @Override
-    public MoviePageResponse searchMovie( String language, String query, Pageable page ) {
-        // validate page 
+    public MoviePageResponse searchMovie( MovieSearchQuery query, Pageable page ) {
+        // validate page
         int pageNumber = page.getPageNumber() == 0 ? 1 : page.getPageNumber();
-        if ( pageNumber > 1 || pageNumber < 1 ) {
+        if ( pageNumber > 500 || pageNumber < 1 ) {
             throw new InvalidPaginationException( "Invalid page: Pages start at 1 and max at 500. They are expected to be an integer." );
         }
-        // get data from provider
-        TmdbMoviesPageableResponse providerResult = movieProvider.searchMovie( language, query, pageNumber );
-        
-        // Return movie data
-        return new MoviePageResponse(
-            providerResult.getPage(),
-            1,
-            providerResult.getResults().size(),
-            providerResult.getResults()
-                .stream()
-                .map( movie -> this.movieMapper.toMovieResponse( movie ) )
-                .toList()
+        // IF --> user send to me title use search api provider before filtring using application code 
+        if ( query.getQuery() == null ) {
+            TmdbMovieDiscoverRequest providerRequest = new TmdbMovieDiscoverRequest(
+                query.getLanguage(),
+                query.getGenreId(),
+                query.getYear(),
+                query.getMinRating(),
+                mapSort( query.getSortBy()),
+                pageNumber
+            );
+            TmdbMoviesPageableResponse movies = movieProvider.discoverMovies( providerRequest );
+            return new MoviePageResponse(
+                movies.getPage(),
+                movies.getTotal_pages(),
+                movies.getResults().size(),
+                movies.getResults()
+                    .stream()
+                    .map( movie -> this.movieMapper.toMovieResponse( movie ) )
+                    .toList()
+            );
+            
+        }
+        List<MovieDetailsProviderData> movies = movieProvider.searchMovieByQuery( 
+               query.getLanguage(), 
+               query.getQuery(), 
+               query.getYear(), 
+               pageNumber 
         );
+        MoviePageResponse filtredMovies = this.filterMovies(
+            movies,
+            query
+        );
+        
+        return filtredMovies;
     }
 
     private Map<String, List<MovieResponse>> generateHomeMoviesData(
@@ -184,4 +210,54 @@ public class MovieServiceImpl implements MovieService {
         return homeMovies;
     }
     
+    private String mapSort(MovieSort sort) {
+        if (sort == null) {
+            return "popularity.desc";
+        }
+    
+        return switch (sort) {
+            case POPULARITY -> "popularity.desc";
+            case RATING -> "vote_average.desc";
+            case RELEASE_DATE -> "primary_release_date.desc";
+        };
+    }
+
+    private MoviePageResponse filterMovies(
+            List<MovieDetailsProviderData> movies,
+            MovieSearchQuery query
+    ) {
+        List<MovieDetailsProviderData> filteredMovies = movies
+            .stream()
+            .filter(movie -> query.getGenreId() == null
+                    || movie.getGenreIds() != null
+                    && movie.getGenreIds().contains( query.getGenreId() ))
+
+            .filter(movie -> query.getYear() == null
+                    || movie.getReleaseDate() != null
+                    && movie.getReleaseDate().startsWith(
+                            query.getYear().toString()
+                    ))
+
+            .filter(movie -> query.getMinRating() == null
+                    || movie.getRating() != null
+                    && movie.getRating() >= query.getMinRating())
+
+            .toList();
+
+        return new MoviePageResponse(
+        1,
+        1,
+        filteredMovies.size(),
+        filteredMovies.stream()
+                .map(movieProvider -> new MovieResponse(
+                        movieProvider.getId(),
+                        movieProvider.getTitle(),
+                        movieProvider.getReleaseDate(),
+                        movieProvider.getPosterPath() != null
+                                ? this.imageBaseUrl + movieProvider.getPosterPath()
+                                : null
+                ))
+                .toList()
+);
+    }
 }

@@ -10,7 +10,13 @@ import com.filmexa.stream.modules.moviesExternal.dto.request.MovieSearchQuery;
 import com.filmexa.stream.modules.moviesExternal.dto.response.MoviePageResponse;
 import com.filmexa.stream.modules.moviesExternal.service.MovieService;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+
+@Tag (
+    name = "Search",
+    description = "Search movies"
+)
 
 @RestController
 @RequestMapping("/api/search/movie")
@@ -27,6 +33,6 @@ public class SerachMovieController {
         @Valid @ModelAttribute MovieSearchQuery query,
         Pageable pageable
     ) {
-        return this.movieService.searchMovie( query.getLanguage(), query.getQuery(), pageable );
+        return this.movieService.searchMovie( query, pageable );
     }
 }
