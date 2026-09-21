@@ -6,7 +6,7 @@
 /*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/20 17:48:28 by marouan           #+#    #+#             */
-/*   Updated: 2026/09/21 14:20:51 by marouan          ###   ########.fr       */
+/*   Updated: 2026/09/21 15:53:53 by marouan          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,7 +23,7 @@ import com.filmexa.stream.modules.torrent.dto.yts.YtsResponseDto;
 import com.filmexa.stream.modules.torrent.dto.yts.YtsTorrentDto;
 import com.filmexa.stream.modules.torrent.dto.TorrentResultDto;
 
-@Component
+@Component("ytsClient")
 public class YtsClient implements TorrentClient {
 
     private final RestClient restClient;

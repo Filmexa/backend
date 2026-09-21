@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   MovieController.java                               :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: maddou <maddou@student.42.fr>              +#+  +:+       +#+        */
+/*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/13 10:27:27 by maddou            #+#    #+#             */
-/*   Updated: 2026/09/18 02:33:08 by maddou           ###   ########.fr       */
+/*   Updated: 2026/09/21 15:54:59 by marouan          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.data.domain.Pageable;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 import org.springframework.validation.annotation.Validated;
 import jakarta.validation.constraints.Positive;
@@ -31,6 +32,10 @@ import com.filmexa.stream.modules.moviesExternal.dto.response.TrendingMoviesResp
 import com.filmexa.stream.modules.moviesExternal.dto.response.MovieResponse;
 import com.filmexa.stream.modules.moviesExternal.dto.response.MovieDetailsResponse;
 import com.filmexa.stream.modules.moviesExternal.dto.response.MoviePageResponse;
+import com.filmexa.stream.modules.torrent.dto.TorrentResultDto;
+
+// # you must deleted
+import com.filmexa.stream.modules.torrent.client.TorrentClient;
 
 import jakarta.validation.Valid;
 
@@ -47,9 +52,13 @@ import java.util.Map;
 public class MovieController {
 
     private final MovieService movieService;
-
-    public MovieController( MovieService movieService ) {
+    
+    // # you must deleted
+    private final TorrentClient torrentClient;
+    
+    public MovieController( MovieService movieService, @Qualifier("pirateBay") TorrentClient torrentClient) {
         this.movieService = movieService;
+        this.torrentClient = torrentClient;
     }
 
     @GetMapping("/trending/week")
@@ -62,6 +71,12 @@ public class MovieController {
         return this.movieService.buildHomeMovies( query.getLanguage() );
     }
 
+    @GetMapping("/test")
+    public  List<TorrentResultDto> getHomeData( ) {
+        return this.torrentClient.search( "tt1375666" );
+        // return ;
+    }
+    
     @GetMapping("/genre/{id}")
     public MoviePageResponse getMovieByGenre( @PathVariable 
         @Positive(message = "ID must be greater than 0") 

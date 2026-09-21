@@ -6,7 +6,7 @@
 /*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/08 18:34:10 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/09/21 10:59:21 by marouan          ###   ########.fr       */
+/*   Updated: 2026/09/21 15:49:37 by marouan          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -161,9 +161,9 @@ public class SecurityConfig {
     }
 
 	@Bean
-    RestClient PiratBayRestClient(
+    RestClient PirateBayRestClient(
             RestClient.Builder builder,
-            @Value("${piratbay.base-url}") String baseUrl
+            @Value("${piratebay.base-url}") String baseUrl
     ) {
         return builder
                 .baseUrl(baseUrl)
