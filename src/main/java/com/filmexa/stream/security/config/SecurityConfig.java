@@ -6,7 +6,7 @@
 /*   By: maddou <maddou@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/08 18:34:10 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/09/20 01:13:22 by maddou           ###   ########.fr       */
+/*   Updated: 2026/09/21 10:29:39 by maddou           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -71,6 +71,7 @@ public class SecurityConfig {
 	private static final String[] PUBLIC_WHITELIST = {
 			"/api/movie-categories/**",
 			"/api/movies/trending/week",
+			"/api/movies/*",
 			"/api/movies/home",
 			"/api/movies/genre/*",
 			"/api/search/**",
@@ -146,6 +147,26 @@ public class SecurityConfig {
                     HttpHeaders.AUTHORIZATION,
                     "Bearer " + token
                 )
+                .build();
+    }
+
+	@Bean
+    RestClient YTSRestClient(
+            RestClient.Builder builder,
+            @Value("${yts.base-url}") String baseUrl
+    ) {
+        return builder
+                .baseUrl(baseUrl)
+                .build();
+    }
+
+	@Bean
+    RestClient PIRATBAYRestClient(
+            RestClient.Builder builder,
+            @Value("${piratbay.base-url}") String baseUrl
+    ) {
+        return builder
+                .baseUrl(baseUrl)
                 .build();
     }
 }
