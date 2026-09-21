@@ -1,19 +1,24 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   TorrentProvider.java                               :+:      :+:    :+:   */
+/*   YtsData.java                                          :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: maddou <maddou@student.42.fr>              +#+  +:+       +#+        */
+/*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/09/20 12:37:37 by marouan           #+#    #+#             */
-/*   Updated: 2026/09/21 10:13:46 by maddou           ###   ########.fr       */
+/*   Created: 2026/09/21 11:26:47 by marouan           #+#    #+#             */
+/*   Updated: 2026/09/21 11:31:00 by marouan          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-package com.filmexa.stream.modules.torrent.client;
+package com.filmexa.stream.modules.torrent.dto.yts;
 
-import com.filmexa.stream.modules.torrent.dto.TorrentProviderResponseData;
+import lombok.Data;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 
-public interface TorrentProvider {
-    TorrentProviderResponseData search( String imdbId );
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class YtsData {
+    private Movie movie;
 }

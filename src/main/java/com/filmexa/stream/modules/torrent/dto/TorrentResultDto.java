@@ -1,7 +1,7 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   TorrentProviderResponseData.java                           :+:      :+:    :+:   */
+/*   TorrentResultDto.java                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
@@ -19,16 +19,16 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class TorrentProviderResponseData {
+public class TorrentResultDto {
     private String  imdb;
     private String  hash;
     private Integer seeds;
     private Integer peers;
     private String  size;
-    private String  size_bytes;
+    private Long  sizeBytes;
     private String  quality;
 }
-
+// https://movies-api.accel.li/api/v2/movie_details.json?imdb_id=tt1375666
 // // yts
 // {
 //     "url": "https://yts.gg/torrent/download/CDED33F7FBF3E4E073778848FAD17674C0A35B82",
