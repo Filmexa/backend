@@ -6,7 +6,7 @@
 /*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/14 12:33:45 by maddou            #+#    #+#             */
-/*   Updated: 2026/09/22 12:20:05 by marouan          ###   ########.fr       */
+/*   Updated: 2026/09/22 14:12:45 by marouan          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -226,6 +226,7 @@ public class MovieServiceImpl implements MovieService {
             movieDetails.getRelease_date(),
             movieDetails.getTitle(),
             movieDetails.getImdb_id(),
+            movieDetails.getVote_average(),
             actors
         );
     }
