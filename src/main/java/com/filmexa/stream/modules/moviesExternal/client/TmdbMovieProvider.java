@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   TmdbMovieProvider.java                             :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: maddou <maddou@student.42.fr>              +#+  +:+       +#+        */
+/*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/13 10:29:13 by maddou            #+#    #+#             */
-/*   Updated: 2026/09/20 01:12:47 by maddou           ###   ########.fr       */
+/*   Updated: 2026/09/22 12:16:31 by marouan          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -56,6 +56,16 @@ public class TmdbMovieProvider implements MovieProvider {
             .retrieve()
             .body( MovieData.class );
         return response.getResults();
+    }
+
+    @Override
+    public TmdbMoviesPageableResponse  getTopRatedMovies( String language, int page ){
+        TmdbMoviesPageableResponse response =  this.restClient
+            .get()
+            .uri("/movie/top_rated?language={language}&page={page}", language, page )
+            .retrieve()
+            .body( TmdbMoviesPageableResponse.class );
+        return response;
     }
 
     //with_genres={genreId} // Filter by genre 
