@@ -8,7 +8,7 @@ import lombok.Data;
 public class DownloadRequestDto {
 
     @NotNull(message = "Movie ID is required")
-    private long movieId;
+    private Long movieId;
 
     @NotBlank(message = "Magnet URL is required")
     private String magnetUrl;

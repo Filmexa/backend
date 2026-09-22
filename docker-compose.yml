@@ -20,12 +20,17 @@ services:
 
     env_file:
       - ./.env
+    volumes:
+      # Downloaded movies + the transcoded HLS cache must survive container
+      # restarts, otherwise every redeploy re-downloads and re-encodes.
+      - movie_data:/data/movies
     depends_on:
       - postgres
     networks:
       - shared-network
 volumes:
   postgres_data:
+  movie_data:
 
 networks:
   shared-network:

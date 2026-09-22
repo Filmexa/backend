@@ -9,9 +9,13 @@ import bt.torrent.selector.PieceSelector;
 public class SequentialPieceSelector implements PieceSelector {
 
     private int totalPieces;
-    private boolean isMp4;
+    private volatile boolean isMp4;
 
     public SequentialPieceSelector(boolean isMp4) {
+        this.isMp4 = isMp4;
+    }
+
+    public void setMp4(boolean isMp4) {
         this.isMp4 = isMp4;
     }
 

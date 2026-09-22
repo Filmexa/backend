@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class DownloadProgressDto {
 
-    private long movieId;
+    private Long movieId;
     private DownloadStatus status;
     private double progressPercentage;
     private long downloadedBytes;

@@ -28,7 +28,7 @@ public class DownloadController {
     }
 
     @GetMapping("/{movieId}/progress")
-    public ResponseEntity<DownloadProgressDto> getProgress(@PathVariable long movieId) {
+    public ResponseEntity<DownloadProgressDto> getProgress(@PathVariable Long movieId) {
         DownloadProgressDto progress = torrentDownloadService.getProgress(movieId);
         if (progress == null) {
             return ResponseEntity.notFound().build();

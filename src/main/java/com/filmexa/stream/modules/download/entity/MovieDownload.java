@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   MovieDownload.java                                 :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: user <user@student.1337.ma>                +#+  +:+       +#+        */
+/*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/17 15:50:00 by user              #+#    #+#             */
-/*   Updated: 2026/09/17 15:50:00 by user             ###   ########.fr       */
+/*   Updated: 2026/09/22 21:42:09 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,7 +33,7 @@ import lombok.EqualsAndHashCode;
 public class MovieDownload extends AbstractEntity {
 
     @Column(nullable = false, unique = true)
-    long movieId;
+    private Long movieId;
 
     @Column(columnDefinition = "TEXT", nullable = false)
     private String magnetUrl;

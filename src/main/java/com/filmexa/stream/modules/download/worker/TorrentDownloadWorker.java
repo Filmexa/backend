@@ -35,11 +35,15 @@ public class TorrentDownloadWorker {
         this.movieDownloadRepository = movieDownloadRepository;
     }
 
-    public DownloadProgressDto getProgress(long movieId) {
+    public DownloadProgressDto getProgress(Long movieId) {
         return progressCache.get(movieId);
     }
 
-    public void stopDownload(long movieId) {
+    public boolean isActive(Long movieId) {
+        return activeClients.containsKey(movieId);
+    }
+
+    public void stopDownload(Long movieId) {
         BtClient client = activeClients.remove(movieId);
         if (client != null) {   
             client.stop();
@@ -52,7 +56,7 @@ public class TorrentDownloadWorker {
         }
     }
     @Async("torrentTaskExecutor")
-    public void startDownloadAsync(long movieId, String magnetUrl) {
+    public void startDownloadAsync(Long movieId, String magnetUrl) {
         try {
             log.info("Starting background download for movie: {}", movieId);
             
@@ -86,16 +90,16 @@ public class TorrentDownloadWorker {
                 AtomicBoolean readyToStreamMarked = new AtomicBoolean(false);
 
                 CompletableFuture<?> future = client.startAsync(sessionState -> {
-                    long downloaded = sessionState.getDownloaded();
-                    long left = sessionState.getLeft();
-                    long total = downloaded + left;
+                    Long downloaded = sessionState.getDownloaded();
+                    Long left = sessionState.getLeft();
+                    Long total = downloaded + left;
 
                     // 1. Calculate speed: (bytes now - bytes 1 second ago)
-                    long prev = previousDownloaded.get();
-                    long speed = downloaded - prev;
+                    Long prev = previousDownloaded.get();
+                    Long speed = downloaded - prev;
                     // safety check
                     if (speed < 0) {
-                        speed = 0;
+                        speed = 0l;
                     }
                     previousDownloaded.set(downloaded);
 
