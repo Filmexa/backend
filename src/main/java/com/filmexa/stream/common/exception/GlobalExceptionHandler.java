@@ -6,7 +6,7 @@
 /*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/30 11:09:53 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/09/17 11:34:54 by marouan          ###   ########.fr       */
+/*   Updated: 2026/09/22 11:21:55 by kchaouki          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,11 +28,10 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
+import org.springframework.dao.DataIntegrityViolationException;
 
 
 import com.filmexa.stream.common.utils.ErrorResponse;
-import com.filmexa.stream.common.exception.NotFoundException;
-import com.filmexa.stream.common.exception.InvalidPaginationException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -52,6 +51,30 @@ public class GlobalExceptionHandler {
         );
     }
     
+    @ExceptionHandler( ConflictException.class )
+    public ResponseEntity<ErrorResponse> handleConflict( ConflictException ex ) {
+        return this.builderResponse(
+                ex.getMessage(),
+                HttpStatus.CONFLICT
+        );
+    }
+
+    @ExceptionHandler( DataIntegrityViolationException.class )
+    public ResponseEntity<ErrorResponse> handleDataIntegrityViolation( DataIntegrityViolationException ex ) {
+        return this.builderResponse(
+                "Resource already exists or violates a database constraint",
+                HttpStatus.CONFLICT
+        );
+    }
+
+    @ExceptionHandler( IllegalArgumentException.class )
+    public ResponseEntity<ErrorResponse> handleIllegalArgument( IllegalArgumentException ex ) {
+        return this.builderResponse(
+                ex.getMessage(),
+                HttpStatus.BAD_REQUEST
+        );
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ValidationErrorResponse> handleValidationErrors(
             MethodArgumentNotValidException ex) {
