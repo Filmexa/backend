@@ -6,7 +6,7 @@
 /*   By: maddou <maddou@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/16 16:29:25 by marouan           #+#    #+#             */
-/*   Updated: 2026/09/19 20:27:00 by maddou           ###   ########.fr       */
+/*   Updated: 2026/09/22 22:43:31 by maddou           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,7 +18,6 @@ import lombok.Data;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 
-import com.filmexa.stream.modules.moviesExternal.dto.tmdb.MoviesProviderData;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
