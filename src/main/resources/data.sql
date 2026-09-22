@@ -1,8 +1,3 @@
--- Seed data for movie_category.
--- Runs on every startup, after Hibernate has created/updated the schema
--- (see spring.sql.init.mode and spring.jpa.defer-datasource-initialization).
--- Re-running is safe: rows are matched on genre_id and refreshed.
-
 INSERT INTO movie_category
     (id, name_en, name_fr, name_ar, description, genre_id, active, display_order, created_at, updated_at)
 VALUES
