@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   MovieServiceImpl.java                              :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: maddou <maddou@student.42.fr>              +#+  +:+       +#+        */
+/*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/14 12:33:45 by maddou            #+#    #+#             */
-/*   Updated: 2026/09/20 01:12:13 by maddou           ###   ########.fr       */
+/*   Updated: 2026/09/22 12:20:05 by marouan          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -138,7 +138,12 @@ public class MovieServiceImpl implements MovieService {
         if ( genre == null ) {
             throw new NotFoundException( "Genre does not exist" );
         }
-        TmdbMoviesPageableResponse providerResult = movieProvider.getMoviesByGenre( language, id, pageNumber );
+        TmdbMoviesPageableResponse providerResult = null;
+        if ( id == 100 ) {
+            providerResult = movieProvider.getTopRatedMovies( language, pageNumber );
+        }
+        else 
+            providerResult = movieProvider.getMoviesByGenre( language, id, pageNumber );
         MoviePageResponse result = new MoviePageResponse(
             providerResult.getPage(),
             500,

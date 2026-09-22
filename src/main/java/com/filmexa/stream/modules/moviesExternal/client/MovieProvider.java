@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   MovieProvider.java                                 :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: maddou <maddou@student.42.fr>              +#+  +:+       +#+        */
+/*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/14 12:39:46 by maddou            #+#    #+#             */
-/*   Updated: 2026/09/20 01:10:35 by maddou           ###   ########.fr       */
+/*   Updated: 2026/09/22 12:15:25 by marouan          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,6 +23,7 @@ import com.filmexa.stream.modules.moviesExternal.dto.tmdb.TmdbMoviesPageableResp
 public interface MovieProvider {
     List< MovieDetailsProviderResponse > getTrendingMovies( String language );
     List< MoviesProviderData > getTopRatedMovies( String language );
+    TmdbMoviesPageableResponse getTopRatedMovies( String language, int page );
     List< MoviesProviderData > getMoviesByGenre( String language, Long id );
     TmdbMoviesPageableResponse getMoviesByGenre( String language, Integer id, int page );
     TmdbMoviesPageableResponse searchMovie( String language, String query, int page );
