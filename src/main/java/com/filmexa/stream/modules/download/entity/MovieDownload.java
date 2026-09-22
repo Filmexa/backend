@@ -39,8 +39,6 @@ public class MovieDownload extends AbstractEntity {
     @Column(columnDefinition = "TEXT", nullable = false)
     private String magnetUrl;
 
-    @Column(nullable = false)
-    private String infoHash;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -48,12 +46,10 @@ public class MovieDownload extends AbstractEntity {
 
     private long totalBytes = 0;
     private long downloadedBytes = 0;
-    private long pieceLength = 0;
-    private int totalPieces = 0;
 
     private String fileName;
     private String containerFormat; // "mp4", "mkv", "webm"
-    private String filePath;
+    private String storagePath;
 
     @Column(nullable = false)
     private boolean isReadyToStream = false;

@@ -13,7 +13,5 @@ public interface MovieDownloadRepository extends JpaRepository<MovieDownload, UU
 
     Optional<MovieDownload> findByMovieId(UUID movieId);
 
-    Optional<MovieDownload> findByInfoHash(String infoHash);
-
     List<MovieDownload> findByLastWatchedAtBefore(LocalDateTime cutoff);
 }
