@@ -1,6 +1,5 @@
 package com.filmexa.stream.modules.download.service;
 
-import java.util.UUID;
 
 import com.filmexa.stream.modules.download.entity.MovieDownload;
 import com.filmexa.stream.modules.download.dto.DownloadProgressDto;
@@ -10,8 +9,8 @@ public interface TorrentDownloadService {
 
     MovieDownload startDownload(DownloadRequestDto request);
 
-    DownloadProgressDto getProgress(UUID movieId);
+    DownloadProgressDto getProgress(long movieId);
 
-    void stopDownload(UUID movieId);
+    void stopDownload(long movieId);
 
 }

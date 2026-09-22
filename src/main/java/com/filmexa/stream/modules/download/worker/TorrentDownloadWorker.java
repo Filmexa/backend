@@ -19,7 +19,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
-import java.util.UUID;
 import com.filmexa.stream.modules.download.enums.DownloadStatus;
 import java.time.LocalDateTime;
 
@@ -29,18 +28,18 @@ public class TorrentDownloadWorker {
     private final MovieDownloadRepository movieDownloadRepository;
     @Value("${app.video-storage-path:./data/movies}")
     private String videoStoragePath; 
-    private final Map<UUID, BtClient> activeClients = new ConcurrentHashMap<>(); 
-    private final Map<UUID, DownloadProgressDto> progressCache = new ConcurrentHashMap<>();
+    private final Map<Long, BtClient> activeClients = new ConcurrentHashMap<>(); 
+    private final Map<Long, DownloadProgressDto> progressCache = new ConcurrentHashMap<>();
 
     public TorrentDownloadWorker(MovieDownloadRepository movieDownloadRepository) {
         this.movieDownloadRepository = movieDownloadRepository;
     }
 
-    public DownloadProgressDto getProgress(UUID movieId) {
+    public DownloadProgressDto getProgress(long movieId) {
         return progressCache.get(movieId);
     }
 
-    public void stopDownload(UUID movieId) {
+    public void stopDownload(long movieId) {
         BtClient client = activeClients.remove(movieId);
         if (client != null) {   
             client.stop();
@@ -53,12 +52,12 @@ public class TorrentDownloadWorker {
         }
     }
     @Async("torrentTaskExecutor")
-    public void startDownloadAsync(UUID movieId, String magnetUrl) {
+    public void startDownloadAsync(long movieId, String magnetUrl) {
         try {
             log.info("Starting background download for movie: {}", movieId);
             
             // --- STEP 1: Directory & Format Detection ---
-            Path movieDir = Paths.get(videoStoragePath, movieId.toString());
+            Path movieDir = Paths.get(videoStoragePath, String.valueOf(movieId));
             Files.createDirectories(movieDir);
             boolean isMp4 = magnetUrl.toLowerCase().contains(".mp4");
             

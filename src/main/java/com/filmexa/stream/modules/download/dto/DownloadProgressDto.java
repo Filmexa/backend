@@ -1,6 +1,5 @@
 package com.filmexa.stream.modules.download.dto;
 
-import java.util.UUID;
 import com.filmexa.stream.modules.download.enums.DownloadStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,7 +12,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class DownloadProgressDto {
 
-    private UUID movieId;
+    private long movieId;
     private DownloadStatus status;
     private double progressPercentage;
     private long downloadedBytes;

@@ -1,6 +1,5 @@
 package com.filmexa.stream.modules.download.dto;
 
-import java.util.UUID;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -9,7 +8,7 @@ import lombok.Data;
 public class DownloadRequestDto {
 
     @NotNull(message = "Movie ID is required")
-    private UUID movieId;
+    private long movieId;
 
     @NotBlank(message = "Magnet URL is required")
     private String magnetUrl;

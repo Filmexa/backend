@@ -11,7 +11,7 @@ import com.filmexa.stream.modules.download.entity.MovieDownload;
 
 public interface MovieDownloadRepository extends JpaRepository<MovieDownload, UUID> {
 
-    Optional<MovieDownload> findByMovieId(UUID movieId);
+    Optional<MovieDownload> findByMovieId(long movieId);
 
     List<MovieDownload> findByLastWatchedAtBefore(LocalDateTime cutoff);
 }

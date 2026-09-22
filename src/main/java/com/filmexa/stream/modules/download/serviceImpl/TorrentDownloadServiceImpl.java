@@ -2,7 +2,6 @@ package com.filmexa.stream.modules.download.serviceImpl;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
-import java.util.UUID;
 import org.springframework.stereotype.Service;
 import com.filmexa.stream.modules.download.dto.DownloadProgressDto;
 import com.filmexa.stream.modules.download.dto.DownloadRequestDto;
@@ -29,7 +28,7 @@ public class TorrentDownloadServiceImpl implements TorrentDownloadService {
 
     @Override
     public MovieDownload startDownload(DownloadRequestDto request) {
-        UUID movieId = request.getMovieId();
+        long movieId = request.getMovieId();
         String magnetUrl = request.getMagnetUrl();
 
         // 1. Check if this movie is already in our database
@@ -72,12 +71,12 @@ public class TorrentDownloadServiceImpl implements TorrentDownloadService {
     }
 
     @Override
-    public void stopDownload(UUID movieId) {
+    public void stopDownload(long movieId) {
         torrentDownloadWorker.stopDownload(movieId);
     }
 
     @Override
-    public DownloadProgressDto getProgress(UUID movieId) {
+    public DownloadProgressDto getProgress(long movieId) {
         DownloadProgressDto activeProgress = torrentDownloadWorker.getProgress(movieId);
         if (activeProgress != null) {
             return activeProgress;

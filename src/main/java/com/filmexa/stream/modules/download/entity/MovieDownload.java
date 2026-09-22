@@ -13,7 +13,6 @@
 package com.filmexa.stream.modules.download.entity;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 import com.filmexa.stream.common.utils.AbstractEntity;
 import com.filmexa.stream.modules.download.enums.DownloadStatus;
@@ -34,7 +33,7 @@ import lombok.EqualsAndHashCode;
 public class MovieDownload extends AbstractEntity {
 
     @Column(nullable = false, unique = true)
-    private UUID movieId;
+    long movieId;
 
     @Column(columnDefinition = "TEXT", nullable = false)
     private String magnetUrl;
