@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   MovieResponse.java                                 :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: maddou <maddou@student.42.fr>              +#+  +:+       +#+        */
+/*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/16 12:16:00 by marouan           #+#    #+#             */
-/*   Updated: 2026/09/20 00:04:44 by maddou           ###   ########.fr       */
+/*   Updated: 2026/09/22 15:24:26 by marouan          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,6 +25,7 @@ import lombok.NoArgsConstructor;
 public class MovieResponse {
     Long        id;
     String      title;
-    String   releaseDate;
+    String      releaseDate;
+    Double      rating;
     String      thumbnail;
 }

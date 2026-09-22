@@ -6,7 +6,7 @@
 /*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/14 12:33:45 by maddou            #+#    #+#             */
-/*   Updated: 2026/09/22 12:20:05 by marouan          ###   ########.fr       */
+/*   Updated: 2026/09/22 15:29:16 by marouan          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -69,6 +69,7 @@ public class MovieServiceImpl implements MovieService {
             movie.getPoster_path() != null ? this.imageBaseUrl + movie.getPoster_path() : "",
             movie.getBackdrop_path() != null ? this.imageBaseUrl + movie.getBackdrop_path() : "",
             movie.getOverview(),
+            movie.getVote_average(),
             movie.getGenre_ids()
                 .stream()
                 .map( id -> MovieGenreMapper.getName( id, language ) )
@@ -116,7 +117,8 @@ public class MovieServiceImpl implements MovieService {
             comedy,
             horror,
             drama,
-            romance
+            romance,
+            language
         );
     }
 
@@ -226,6 +228,7 @@ public class MovieServiceImpl implements MovieService {
             movieDetails.getRelease_date(),
             movieDetails.getTitle(),
             movieDetails.getImdb_id(),
+            movieDetails.getVote_average(),
             actors
         );
     }
@@ -236,15 +239,16 @@ public class MovieServiceImpl implements MovieService {
         List< MovieResponse > comedy,
         List< MovieResponse > horror,
         List< MovieResponse > drama,
-        List< MovieResponse > romance
+        List< MovieResponse > romance,
+        String  language
     ) {
         Map<String, List<MovieResponse>> homeMovies = new LinkedHashMap<>();
-        homeMovies.put( "topRated", topRated );
-        homeMovies.put( "action", action );
-        homeMovies.put( "comedy", comedy );
-        homeMovies.put( "horror", horror );
-        homeMovies.put( "drama", drama );
-        homeMovies.put( "romance", romance );
+        homeMovies.put( MovieGenreMapper.getName( 100, language ), topRated );
+        homeMovies.put( MovieGenreMapper.getName( 28, language ), action );
+        homeMovies.put( MovieGenreMapper.getName( 35, language ), comedy );
+        homeMovies.put( MovieGenreMapper.getName( 27, language ), horror );
+        homeMovies.put( MovieGenreMapper.getName( 18, language ), drama );
+        homeMovies.put( MovieGenreMapper.getName( 10749, language ), romance );
         return homeMovies;
     }
     
@@ -291,6 +295,7 @@ public class MovieServiceImpl implements MovieService {
                         movieProvider.getId(),
                         movieProvider.getTitle(),
                         movieProvider.getReleaseDate(),
+                        movieProvider.getRating(),
                         movieProvider.getPosterPath() != null
                                 ? this.imageBaseUrl + movieProvider.getPosterPath()
                                 : null

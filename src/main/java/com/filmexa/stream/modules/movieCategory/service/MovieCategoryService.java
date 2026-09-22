@@ -6,7 +6,7 @@
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/14 11:14:05 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/09/14 12:46:00 by kchaouki         ###   ########.fr       */
+/*   Updated: 2026/09/22 12:29:28 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,7 +26,7 @@ public interface MovieCategoryService {
 
     List<MovieCategory> getAllMovieCategories();
 
-    List<MovieCategoryResponse> getAllMovieCategoriesResponse();
+    List<MovieCategoryResponse> getAllMovieCategoriesResponse(String language);
 
     Optional<MovieCategory> getMovieCategoryById(UUID id);
 
@@ -35,6 +35,8 @@ public interface MovieCategoryService {
     MovieCategory createMovieCategory(MovieCategoryRequest movieCategory);
 
     MovieCategory updateMovieCategory(MovieCategory movieCategory);
+
+    MovieCategory updateMovieCategory(UUID id, MovieCategoryRequest movieCategory);
 
     void deleteMovieCategory(UUID id);
 }

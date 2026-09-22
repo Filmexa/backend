@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   MovieProvederData.java                             :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: maddou <maddou@student.42.fr>              +#+  +:+       +#+        */
+/*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/17 23:07:04 by marouan           #+#    #+#             */
-/*   Updated: 2026/09/18 02:31:19 by maddou           ###   ########.fr       */
+/*   Updated: 2026/09/22 15:22:12 by marouan          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,6 +24,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class MovieProvederData {
+    Double      vote_average;    
     Integer     id;
     String      title;
     String      backdrop_path; 
@@ -31,5 +32,6 @@ public class MovieProvederData {
     List< GenreProviderData > genres;
     String      overview; 
     String      release_date;
+    // Double      vote_average;
     MovieCreditsProviderData    credits;
 }
