@@ -6,7 +6,7 @@
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/14 11:10:38 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/09/14 13:07:37 by kchaouki         ###   ########.fr       */
+/*   Updated: 2026/09/22 12:28:22 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,7 +27,13 @@ import lombok.Data;
 public class MovieCategory extends AbstractEntity {
 
     @Column(nullable = false, unique = true, length = 100)
-    private String name;
+    private String nameEn;
+
+    @Column(unique = true, length = 100)
+    private String nameFr;
+
+    @Column(unique = true, length = 100)
+    private String nameAr;
 
     @Column(length = 500)
     private String description;
@@ -42,4 +48,14 @@ public class MovieCategory extends AbstractEntity {
     private LocalDateTime createdAt = LocalDateTime.now();
 
     private LocalDateTime updatedAt = LocalDateTime.now();
+
+    public String getName(String language) {
+        if ("fr".equals(language) && nameFr != null) {
+            return nameFr;
+        }
+        if ("ar".equals(language) && nameAr != null) {
+            return nameAr;
+        }
+        return nameEn;
+    }
 }
