@@ -27,5 +27,6 @@ public class MovieDetailsProviderResponse {
     String  poster_path;
     String  backdrop_path;
     String  overview;
+    Double  vote_average;
     List<Integer> genre_ids;
 }

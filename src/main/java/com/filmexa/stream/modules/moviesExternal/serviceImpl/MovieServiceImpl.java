@@ -6,7 +6,7 @@
 /*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/14 12:33:45 by maddou            #+#    #+#             */
-/*   Updated: 2026/09/22 15:02:11 by marouan          ###   ########.fr       */
+/*   Updated: 2026/09/22 15:29:16 by marouan          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -69,6 +69,7 @@ public class MovieServiceImpl implements MovieService {
             movie.getPoster_path() != null ? this.imageBaseUrl + movie.getPoster_path() : "",
             movie.getBackdrop_path() != null ? this.imageBaseUrl + movie.getBackdrop_path() : "",
             movie.getOverview(),
+            movie.getVote_average(),
             movie.getGenre_ids()
                 .stream()
                 .map( id -> MovieGenreMapper.getName( id, language ) )
@@ -294,6 +295,7 @@ public class MovieServiceImpl implements MovieService {
                         movieProvider.getId(),
                         movieProvider.getTitle(),
                         movieProvider.getReleaseDate(),
+                        movieProvider.getRating(),
                         movieProvider.getPosterPath() != null
                                 ? this.imageBaseUrl + movieProvider.getPosterPath()
                                 : null

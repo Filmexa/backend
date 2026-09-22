@@ -6,7 +6,7 @@
 /*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/14 20:07:50 by maddou            #+#    #+#             */
-/*   Updated: 2026/09/16 12:18:39 by marouan          ###   ########.fr       */
+/*   Updated: 2026/09/22 15:13:47 by marouan          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,5 +28,6 @@ public class TrendingMoviesResponse {
     String      thumbnail;
     String      backdropUrl;
     String      overview;
+    Double      rating;
     List<String> genres;
 }
