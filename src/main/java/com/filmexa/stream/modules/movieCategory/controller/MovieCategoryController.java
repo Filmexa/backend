@@ -6,7 +6,7 @@
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/14 11:13:00 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/09/14 13:07:00 by kchaouki         ###   ########.fr       */
+/*   Updated: 2026/09/22 12:42:22 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,9 +24,10 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.filmexa.stream.common.utils.ErrorResponse;
 import com.filmexa.stream.modules.movieCategory.dto.MovieCategoryRequest;
 import com.filmexa.stream.modules.movieCategory.dto.MovieCategoryResponse;
 import com.filmexa.stream.modules.movieCategory.entity.MovieCategory;
@@ -34,8 +35,10 @@ import com.filmexa.stream.modules.movieCategory.service.MovieCategoryService;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Pattern;
 
 @RestController
+@Validated
 @RequestMapping("/api/movie-categories")
 @Tag(name = "Movie Category", description = "Endpoints for managing movie categories")
 public class MovieCategoryController {
@@ -47,48 +50,48 @@ public class MovieCategoryController {
     }
 
     @GetMapping
-    public ResponseEntity<List<MovieCategoryResponse>> getAllMovieCategories() {
+    public ResponseEntity<List<MovieCategoryResponse>> getAllMovieCategories(
+            @RequestParam(defaultValue = "en")
+            @Pattern(regexp = "^(en|fr|ar)$", message = "Language must be en, fr, or ar")
+            String language
+    ) {
         return ResponseEntity.ok(
-                movieCategoryService.getAllMovieCategoriesResponse()
+                movieCategoryService.getAllMovieCategoriesResponse(language)
         );
     }
 
     @PostMapping
-    public ResponseEntity<?> createMovieCategory(
+    public ResponseEntity<MovieCategoryResponse> createMovieCategory(
             @Valid @RequestBody MovieCategoryRequest request
     ) {
-        try {
-            MovieCategory created = movieCategoryService.createMovieCategory(request);
-    
-            MovieCategoryResponse response = new MovieCategoryResponse();
-            response.setId(created.getId());
-            response.setName(created.getName());
-            response.setGenreId(created.getGenreId());
-    
-            return ResponseEntity
-                    .status(HttpStatus.CREATED)
-                    .body(response);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(new ErrorResponse(HttpStatus.BAD_REQUEST.value(), e.getMessage()));
-        }
+        MovieCategory created = movieCategoryService.createMovieCategory(request);
+
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(toResponse(created));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<MovieCategory> updateMovieCategory(@Valid @RequestBody MovieCategory request) {
-        return ResponseEntity.ok(
-                movieCategoryService.updateMovieCategory(request)
-        );
+    public ResponseEntity<MovieCategoryResponse> updateMovieCategory(
+            @PathVariable UUID id,
+            @Valid @RequestBody MovieCategoryRequest request
+    ) {
+        MovieCategory updated = movieCategoryService.updateMovieCategory(id, request);
+
+        return ResponseEntity.ok(toResponse(updated));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteMovieCategory(@PathVariable UUID id) {
-        try {
-            movieCategoryService.deleteMovieCategory(id);
-            return ResponseEntity.noContent().build();
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(new ErrorResponse(HttpStatus.BAD_REQUEST.value(), e.getMessage()));
-        }
+    public ResponseEntity<Void> deleteMovieCategory(@PathVariable UUID id) {
+        movieCategoryService.deleteMovieCategory(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    private MovieCategoryResponse toResponse(MovieCategory category) {
+        MovieCategoryResponse response = new MovieCategoryResponse();
+        response.setId(category.getId());
+        response.setName(category.getName("en"));
+        response.setGenreId(category.getGenreId());
+        return response;
     }
 }
