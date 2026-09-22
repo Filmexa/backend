@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   MovieServiceImpl.java                              :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
+/*   By: maddou <maddou@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/14 12:33:45 by maddou            #+#    #+#             */
-/*   Updated: 2026/09/22 15:29:16 by marouan          ###   ########.fr       */
+/*   Updated: 2026/09/22 23:54:57 by maddou           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -164,20 +164,26 @@ public class MovieServiceImpl implements MovieService {
         if ( pageNumber > 500 || pageNumber < 1 ) {
             throw new InvalidPaginationException( "Invalid page: Pages start at 1 and max at 500. They are expected to be an integer." );
         }
+        if ( query.getGenreId() != null && 
+            MovieGenreMapper.getName( query.getGenreId(), query.getLanguage() ) == null ) {
+            throw new NotFoundException( "Genre does not exist" );
+        }
         // IF --> user send to me title use search api provider before filtring using application code 
         if ( query.getQuery() == null ) {
+            
             TmdbMovieDiscoverRequest providerRequest = new TmdbMovieDiscoverRequest(
                 query.getLanguage(),
-                query.getGenreId(),
+                query.getGenreId() == 100 ? null : query.getGenreId(),
                 query.getYear(),
                 query.getMinRating(),
-                mapSort( query.getSortBy()),
+                query.getGenreId() != null && query.getGenreId() == 100 ? mapSort( MovieSort.RATING ) : mapSort( query.getSortBy() ),
                 pageNumber
             );
+            System.out.println(providerRequest);
             TmdbMoviesPageableResponse movies = movieProvider.discoverMovies( providerRequest );
             return new MoviePageResponse(
                 movies.getPage(),
-                movies.getTotal_pages(),
+                movies.getTotal_pages() > 500 ? 500 : movies.getTotal_pages(),
                 movies.getResults().size(),
                 movies.getResults()
                     .stream()
@@ -271,6 +277,7 @@ public class MovieServiceImpl implements MovieService {
         List<MovieDetailsProviderData> filteredMovies = movies
             .stream()
             .filter(movie -> query.getGenreId() == null
+                    || query.getGenreId().equals(100)
                     || movie.getGenreIds() != null
                     && movie.getGenreIds().contains( query.getGenreId() ))
 
