@@ -45,6 +45,7 @@ public class PirateBayClient implements TorrentClient{
         return response.stream()
             .takeWhile(torrent -> torrent.getSeeders() > 0)
             .map( torrent -> new TorrentResultDto(
+                torrent.getId(),
                 imdbId,
                 torrent.getInfo_hash(),
                 torrent.getSeeders(),

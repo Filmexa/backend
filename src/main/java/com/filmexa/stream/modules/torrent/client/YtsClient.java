@@ -6,7 +6,7 @@
 /*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/20 17:48:28 by marouan           #+#    #+#             */
-/*   Updated: 2026/09/21 15:53:53 by marouan          ###   ########.fr       */
+/*   Updated: 2026/09/22 13:01:14 by marouan          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,10 +39,12 @@ public class YtsClient implements TorrentClient {
             .uri("?imdb_id={imdId}", imdbId )
             .retrieve()
             .body( YtsResponseDto.class );
+        Integer id = response.getData().getMovie().getId();
         List<YtsTorrentDto> dataYts =  response.getData().getMovie().getTorrents();
         // map yts response to common client data
         return dataYts.stream()
             .map( torrent -> new TorrentResultDto(
+                id,
                 imdbId,
                 torrent.getHash(),
                 torrent.getSeeds(),

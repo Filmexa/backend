@@ -6,7 +6,7 @@
 /*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/20 15:35:32 by marouan           #+#    #+#             */
-/*   Updated: 2026/09/21 16:06:30 by marouan          ###   ########.fr       */
+/*   Updated: 2026/09/22 13:00:11 by marouan          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,6 +20,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PirateBayResponseDto {
+    private Integer id;
     private String  info_hash;
     private String  name;
     private Integer seeders;

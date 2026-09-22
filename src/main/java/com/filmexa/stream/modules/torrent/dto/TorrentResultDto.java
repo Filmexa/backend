@@ -20,6 +20,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class TorrentResultDto {
+    private Integer id;
     private String  imdb;
     private String  hash;
     private Integer seeds;
