@@ -6,7 +6,7 @@
 /*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/16 12:06:56 by marouan           #+#    #+#             */
-/*   Updated: 2026/09/17 14:37:58 by marouan          ###   ########.fr       */
+/*   Updated: 2026/09/22 15:24:14 by marouan          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,6 +30,7 @@ public class MovieMapper {
             movieProvider.getId(),
             movieProvider.getTitle(),
             movieProvider.getRelease_date(),
+            movieProvider.getVote_average(),
             movieProvider.getPoster_path() != null ? this.imageBaseUrl + movieProvider.getPoster_path() : null
         );
     }
