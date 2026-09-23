@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   TmdbMovieProvider.java                             :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
+/*   By: maddou <maddou@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/13 10:29:13 by maddou            #+#    #+#             */
-/*   Updated: 2026/09/22 12:16:31 by marouan          ###   ########.fr       */
+/*   Updated: 2026/09/23 00:59:20 by maddou           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,6 +20,8 @@ import com.filmexa.stream.modules.moviesExternal.dto.tmdb.MoviesDetailsResponse;
 import com.filmexa.stream.modules.moviesExternal.dto.tmdb.MovieDetailsProviderResponse;
 import com.filmexa.stream.modules.moviesExternal.dto.tmdb.MoviesDetailsPageableResponse;
 import com.filmexa.stream.modules.moviesExternal.dto.tmdb.request.TmdbMovieDiscoverRequest;
+import com.filmexa.stream.modules.moviesExternal.dto.tmdb.trailer.TrailerData;
+import com.filmexa.stream.modules.moviesExternal.dto.tmdb.trailer.Videos;
 import com.filmexa.stream.modules.moviesExternal.dto.tmdb.TmdbMoviesPageableResponse;
 import com.filmexa.stream.modules.moviesExternal.dto.tmdb.MoviesProviderData;
 import com.filmexa.stream.modules.moviesExternal.dto.tmdb.MovieData;
@@ -162,5 +164,22 @@ public TmdbMoviesPageableResponse discoverMovies(
             )
             .body( MovieProvederData.class );
         return movieData;
+    }
+
+    @Override 
+    public List< TrailerData> getTraierMovie( Integer id ) {
+        Videos data = this.restClient
+            .get()
+            .uri("/movie/{id}/videos", 
+                id)
+            .retrieve()
+            .onStatus(
+                status -> status.value() == 404,
+                (request, response) -> {
+                    throw new NotFoundException("Movie does not exist");
+                }
+            )
+            .body( Videos.class );
+        return  data.getResults();
     }
 }
