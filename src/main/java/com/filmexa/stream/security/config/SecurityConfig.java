@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   SecurityConfig.java                                :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
+/*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/08 18:34:10 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/09/23 16:41:33 by kchaouki         ###   ########.fr       */
+/*   Updated: 2026/09/23 13:16:56 by marouan          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -137,6 +137,26 @@ public class SecurityConfig {
                     HttpHeaders.AUTHORIZATION,
                     "Bearer " + token
                 )
+                .build();
+    }
+
+	@Bean
+    RestClient YtsRestClient(
+            RestClient.Builder builder,
+            @Value("${yts.base-url}") String baseUrl
+    ) {
+        return builder
+                .baseUrl(baseUrl)
+                .build();
+    }
+
+	@Bean
+    RestClient PirateBayRestClient(
+            RestClient.Builder builder,
+            @Value("${piratebay.base-url}") String baseUrl
+    ) {
+        return builder
+                .baseUrl(baseUrl)
                 .build();
     }
 }
