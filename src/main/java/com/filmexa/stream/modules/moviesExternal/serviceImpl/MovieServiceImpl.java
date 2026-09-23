@@ -32,7 +32,6 @@ import com.filmexa.stream.modules.moviesExternal.dto.response.TrendingMoviesResp
 import com.filmexa.stream.modules.moviesExternal.dto.tmdb.MovieDetailsProviderData;
 import com.filmexa.stream.modules.moviesExternal.dto.tmdb.MovieDetailsProviderResponse;
 import com.filmexa.stream.modules.moviesExternal.dto.tmdb.request.TmdbMovieDiscoverRequest;
-import com.filmexa.stream.modules.moviesExternal.dto.tmdb.trailer.TrailerData;
 import com.filmexa.stream.modules.moviesExternal.enums.MovieSort;
 import com.filmexa.stream.modules.moviesExternal.dto.tmdb.TmdbMoviesPageableResponse;
 import com.filmexa.stream.modules.moviesExternal.dto.tmdb.MovieProvederData;
@@ -43,6 +42,8 @@ import com.filmexa.stream.common.exception.InvalidPaginationException;
 
 @Service
 public class MovieServiceImpl implements MovieService {
+
+    private static final String YOUTUBE_WATCH_URL = "https://www.youtube.com/watch?v=";
 
     private final MovieProvider movieProvider;
     private final MovieMapper   movieMapper;
@@ -71,6 +72,7 @@ public class MovieServiceImpl implements MovieService {
             movie.getBackdrop_path() != null ? this.imageBaseUrl + movie.getBackdrop_path() : "",
             movie.getOverview(),
             movie.getVote_average(),
+            this.trailerUrl( movie.getId().intValue() ),
             movie.getGenre_ids()
                 .stream()
                 .map( id -> MovieGenreMapper.getName( id, language ) )
@@ -222,11 +224,6 @@ public class MovieServiceImpl implements MovieService {
                 movie.getProfile_path() != null ? this.imageBaseUrl + movie.getProfile_path() : null,
                 movie.getCharacter()
             )).toList();
-        // get trailer 
-        List< TrailerData > trailer = this.movieProvider.getTraierMovie(id)
-             .stream()
-            .filter( movie -> movie.getType().equals("Trailer") )
-            .toList();
         List< String > genres = movieDetails.getGenres()
             .stream()
             .map( genre -> genre.getName() )
@@ -242,9 +239,22 @@ public class MovieServiceImpl implements MovieService {
             movieDetails.getTitle(),
             movieDetails.getImdb_id(),
             movieDetails.getVote_average(),
-            "https://www.youtube.com/watch?v=" + trailer.get(0).getKey(),
+            this.trailerUrl( id ),
             actors
         );
+    }
+
+    /**
+     * The YouTube URL of a movie's first trailer, or null when the provider has none.
+     * TMDB does not return videos with its list endpoints, so this costs one call per movie.
+     */
+    private String trailerUrl( Integer movieId ) {
+        return this.movieProvider.getTraierMovie( movieId )
+            .stream()
+            .filter( video -> "Trailer".equals( video.getType() ) )
+            .findFirst()
+            .map( video -> YOUTUBE_WATCH_URL + video.getKey() )
+            .orElse( null );
     }
 
     private Map<String, List<MovieResponse>> generateHomeMoviesData(
