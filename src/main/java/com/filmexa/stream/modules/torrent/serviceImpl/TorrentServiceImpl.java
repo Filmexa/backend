@@ -6,7 +6,7 @@
 /*   By: maddou <maddou@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/23 13:22:25 by marouan           #+#    #+#             */
-/*   Updated: 2026/09/23 19:54:31 by maddou           ###   ########.fr       */
+/*   Updated: 2026/09/23 21:44:15 by maddou           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -50,6 +50,9 @@ public class TorrentServiceImpl implements TorrentService{
         );
         
         Optional<TorrentResultDto> selectedTorrent = this.select( torrentMovieData );
+        selectedTorrent.ifPresent(torrent -> {
+            torrent.setMagnet( "magnet:?xt=urn:btih:" + torrent.getMagnet());
+        });
         return selectedTorrent;
     };
 
@@ -71,7 +74,6 @@ public class TorrentServiceImpl implements TorrentService{
         if (quality == null) {
             return -1;
         }
-        System.out.println( quality );
         return switch (quality) {
             case "1080p" -> 3;
             case "720p"  -> 2;

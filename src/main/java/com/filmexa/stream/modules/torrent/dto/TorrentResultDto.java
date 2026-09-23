@@ -22,7 +22,7 @@ import lombok.NoArgsConstructor;
 public class TorrentResultDto {
     private Integer id;
     private String  imdb;
-    private String  hash;
+    private String  magnet;
     private Integer seeds;
     private Integer peers;
     private String  size;
