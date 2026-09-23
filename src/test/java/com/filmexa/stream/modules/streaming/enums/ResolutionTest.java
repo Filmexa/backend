@@ -12,17 +12,23 @@ class ResolutionTest {
     void ladderNeverOffersARungAboveTheSource() {
         List<Resolution> ladder = Resolution.ladderFor(720);
 
-        assertThat(ladder).containsExactly(Resolution.P360, Resolution.P480, Resolution.P720);
+        assertThat(ladder).containsExactly(
+                Resolution.P144, Resolution.P240, Resolution.P360, Resolution.P480, Resolution.P720);
     }
 
     @Test
     void ladderForA1080pSourceOffersEveryRung() {
-        assertThat(Resolution.ladderFor(1080)).hasSize(4);
+        assertThat(Resolution.ladderFor(1080)).containsExactly(Resolution.values());
+    }
+
+    @Test
+    void ladderForALowSourceOffersOnlyTheRungsBelowIt() {
+        assertThat(Resolution.ladderFor(240)).containsExactly(Resolution.P144, Resolution.P240);
     }
 
     @Test
     void sourceSmallerThanTheLowestRungStillGetsOneVariant() {
-        assertThat(Resolution.ladderFor(240)).containsExactly(Resolution.P360);
+        assertThat(Resolution.ladderFor(100)).containsExactly(Resolution.P144);
     }
 
     @Test

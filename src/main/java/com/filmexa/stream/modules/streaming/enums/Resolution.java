@@ -51,7 +51,7 @@ public enum Resolution {
     /**
      * The rungs to offer for a source of the given height: everything at or below it.
      * A source smaller than the lowest rung still gets that lowest rung, otherwise
-     * a 240p file would have no variants at all.
+     * a sub-144p file would have no variants at all.
      */
     public static List<Resolution> ladderFor(int sourceHeight) {
         List<Resolution> rungs = new ArrayList<>();
@@ -61,7 +61,7 @@ public enum Resolution {
             }
         }
         if (rungs.isEmpty()) {
-            rungs.add(P360);
+            rungs.add(P144);
         }
         rungs.sort(Comparator.comparingInt(Resolution::getHeight));
         return rungs;
