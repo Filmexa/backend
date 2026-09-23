@@ -43,7 +43,7 @@ public class PirateBayClient implements TorrentClient{
             .body( new ParameterizedTypeReference<List<PirateBayResponseDto>>() {} );
         
         return response.stream()
-            .takeWhile(torrent -> torrent.getSeeders() > 0)
+            .takeWhile(torrent -> torrent.getSeeders() > 1 )
             .map( torrent -> new TorrentResultDto(
                 torrent.getId(),
                 imdbId,

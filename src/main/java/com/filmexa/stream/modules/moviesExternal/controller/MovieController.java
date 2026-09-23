@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   MovieController.java                               :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
+/*   By: maddou <maddou@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/13 10:27:27 by maddou            #+#    #+#             */
-/*   Updated: 2026/09/21 15:54:59 by marouan          ###   ########.fr       */
+/*   Updated: 2026/09/23 19:55:37 by maddou           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,12 +35,13 @@ import com.filmexa.stream.modules.moviesExternal.dto.response.MoviePageResponse;
 import com.filmexa.stream.modules.torrent.dto.TorrentResultDto;
 
 // # you must deleted
-import com.filmexa.stream.modules.torrent.client.TorrentClient;
+import com.filmexa.stream.modules.torrent.service.TorrentService;
 
 import jakarta.validation.Valid;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Tag(
     name = "Movies",
@@ -54,11 +55,11 @@ public class MovieController {
     private final MovieService movieService;
     
     // # you must deleted
-    private final TorrentClient torrentClient;
+    // private final TorrentService torrentService;
     
-    public MovieController( MovieService movieService, @Qualifier("pirateBay") TorrentClient torrentClient) {
+    public MovieController( MovieService movieService/* , TorrentService torrentService*/) {
         this.movieService = movieService;
-        this.torrentClient = torrentClient;
+        // this.torrentService = torrentService;
     }
 
     @GetMapping("/trending/week")
@@ -71,11 +72,11 @@ public class MovieController {
         return this.movieService.buildHomeMovies( query.getLanguage() );
     }
 
-    @GetMapping("/test")
-    public  List<TorrentResultDto> getHomeData( ) {
-        return this.torrentClient.search( "tt1375666" );
-        // return ;
-    }
+    // @GetMapping("/test")
+    // public  Optional<TorrentResultDto> getHomeData( ) {
+    //     return this.torrentService.resolve( "tt1375666" );
+    //     // return ;
+    // }
     
     @GetMapping("/genre/{id}")
     public MoviePageResponse getMovieByGenre( @PathVariable 

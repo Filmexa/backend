@@ -15,8 +15,6 @@ package com.filmexa.stream.modules.torrent.client;
 import java.util.List;
 
 import com.filmexa.stream.modules.torrent.dto.TorrentResultDto;
-import com.filmexa.stream.modules.torrent.dto.yts.YtsData;
-import com.filmexa.stream.modules.torrent.dto.yts.YtsTorrentDto;
 
 public interface TorrentClient {
     List<TorrentResultDto> search( String imdbId );

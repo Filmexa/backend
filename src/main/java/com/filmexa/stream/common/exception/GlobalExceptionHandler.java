@@ -6,7 +6,7 @@
 /*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/30 11:09:53 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/09/17 11:34:54 by marouan          ###   ########.fr       */
+/*   Updated: 2026/09/22 11:21:55 by kchaouki          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,11 +28,11 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
+import org.springframework.dao.DataIntegrityViolationException;
 
 
 import com.filmexa.stream.common.utils.ErrorResponse;
-import com.filmexa.stream.common.exception.NotFoundException;
-import com.filmexa.stream.common.exception.InvalidPaginationException;
+import com.filmexa.stream.modules.streaming.exception.StreamNotReadyException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -52,6 +52,30 @@ public class GlobalExceptionHandler {
         );
     }
     
+    @ExceptionHandler( ConflictException.class )
+    public ResponseEntity<ErrorResponse> handleConflict( ConflictException ex ) {
+        return this.builderResponse(
+                ex.getMessage(),
+                HttpStatus.CONFLICT
+        );
+    }
+
+    @ExceptionHandler( DataIntegrityViolationException.class )
+    public ResponseEntity<ErrorResponse> handleDataIntegrityViolation( DataIntegrityViolationException ex ) {
+        return this.builderResponse(
+                "Resource already exists or violates a database constraint",
+                HttpStatus.CONFLICT
+        );
+    }
+
+    @ExceptionHandler( IllegalArgumentException.class )
+    public ResponseEntity<ErrorResponse> handleIllegalArgument( IllegalArgumentException ex ) {
+        return this.builderResponse(
+                ex.getMessage(),
+                HttpStatus.BAD_REQUEST
+        );
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ValidationErrorResponse> handleValidationErrors(
             MethodArgumentNotValidException ex) {
@@ -128,6 +152,21 @@ public class GlobalExceptionHandler {
         );
     }
     
+    /**
+     * The requested part of the movie is not on disk yet. Retry-After tells the player
+     * to buffer and come back rather than giving up on the stream.
+     */
+    @ExceptionHandler( StreamNotReadyException.class )
+    public ResponseEntity<ErrorResponse> handleStreamNotReady( StreamNotReadyException ex ) {
+        return ResponseEntity
+                .status( HttpStatus.SERVICE_UNAVAILABLE )
+                .header( "Retry-After", String.valueOf( ex.getRetryAfterSeconds() ) )
+                .body( new ErrorResponse(
+                        HttpStatus.SERVICE_UNAVAILABLE.value(),
+                        ex.getMessage()
+                ) );
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleUnexpectedException( Exception ex ) {
         System.out.println(ex.getMessage());

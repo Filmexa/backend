@@ -23,5 +23,6 @@ public class MoviesProviderData {
     Long    id;
     String  title;
     String  release_date;
+    Double  vote_average;
     String  poster_path;
 }
