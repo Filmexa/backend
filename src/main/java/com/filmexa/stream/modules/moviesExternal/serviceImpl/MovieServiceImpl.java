@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   MovieServiceImpl.java                              :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: maddou <maddou@student.42.fr>              +#+  +:+       +#+        */
+/*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/14 12:33:45 by maddou            #+#    #+#             */
-/*   Updated: 2026/09/23 01:16:51 by maddou           ###   ########.fr       */
+/*   Updated: 2026/09/23 11:35:57 by marouan          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -165,16 +165,18 @@ public class MovieServiceImpl implements MovieService {
         if ( pageNumber > 500 || pageNumber < 1 ) {
             throw new InvalidPaginationException( "Invalid page: Pages start at 1 and max at 500. They are expected to be an integer." );
         }
+       
         if ( query.getGenreId() != null && 
             MovieGenreMapper.getName( query.getGenreId(), query.getLanguage() ) == null ) {
             throw new NotFoundException( "Genre does not exist" );
         }
+       
         // IF --> user send to me title use search api provider before filtring using application code 
         if ( query.getQuery() == null ) {
             
             TmdbMovieDiscoverRequest providerRequest = new TmdbMovieDiscoverRequest(
                 query.getLanguage(),
-                query.getGenreId() == 100 ? null : query.getGenreId(),
+                query.getGenreId() != null && query.getGenreId() == 100 ? null : query.getGenreId(),
                 query.getYear(),
                 query.getMinRating(),
                 query.getGenreId() != null && query.getGenreId() == 100 ? mapSort( MovieSort.RATING ) : mapSort( query.getSortBy() ),
@@ -193,6 +195,7 @@ public class MovieServiceImpl implements MovieService {
             );
             
         }
+        System.out.println(query.getGenreId()); 
         List<MovieDetailsProviderData> movies = movieProvider.searchMovieByQuery( 
                query.getLanguage(), 
                query.getQuery(), 
@@ -282,6 +285,7 @@ public class MovieServiceImpl implements MovieService {
             List<MovieDetailsProviderData> movies,
             MovieSearchQuery query
     ) {
+        
         List<MovieDetailsProviderData> filteredMovies = movies
             .stream()
             .filter(movie -> query.getGenreId() == null
