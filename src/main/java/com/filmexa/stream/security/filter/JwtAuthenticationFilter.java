@@ -23,6 +23,7 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import com.filmexa.stream.modules.streaming.security.StreamTokenService;
 import com.filmexa.stream.security.service.JwtService;
 import com.filmexa.stream.security.service.UserDetailsServiceImpl;
 
@@ -37,11 +38,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final UserDetailsServiceImpl userDetailsServiceImpl;
+    private final StreamTokenService streamTokenService;
 
     @Autowired
-    public JwtAuthenticationFilter(JwtService jwtService, UserDetailsServiceImpl userDetailsServiceImpl) {
+    public JwtAuthenticationFilter(JwtService jwtService, UserDetailsServiceImpl userDetailsServiceImpl,
+            StreamTokenService streamTokenService) {
         this.jwtService = jwtService;
         this.userDetailsServiceImpl = userDetailsServiceImpl;
+        this.streamTokenService = streamTokenService;
     }
 
     @Override
@@ -49,6 +53,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
         final String authHeader = request.getHeader("Authorization");
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            // hls.js cannot set headers on playlist/segment requests, so streaming falls
+            // back to the short-lived stream token in the query string.
+            authenticateStreamToken(request);
             filterChain.doFilter(request, response);
         } else {
             String token = authHeader.substring(7);
@@ -78,5 +85,29 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
         }
     }
-    
+
+    private void authenticateStreamToken(HttpServletRequest request) {
+        if (SecurityContextHolder.getContext().getAuthentication() != null) {
+            return;
+        }
+
+        String username = streamTokenService.validate(request.getParameter("token"));
+        if (username == null) {
+            return;
+        }
+
+        try {
+            UserDetails userDetails = userDetailsServiceImpl.loadUserByUsername(username);
+            UsernamePasswordAuthenticationToken authToken =
+                new UsernamePasswordAuthenticationToken(
+                    userDetails,
+                    null,
+                    userDetails.getAuthorities()
+                );
+            authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+            SecurityContextHolder.getContext().setAuthentication(authToken);
+        } catch (UsernameNotFoundException e) {
+            SecurityContextHolder.clearContext();
+        }
+    }
 }
