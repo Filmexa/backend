@@ -6,7 +6,7 @@
 /*   By: maddou <maddou@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/14 12:33:45 by maddou            #+#    #+#             */
-/*   Updated: 2026/09/22 23:54:57 by maddou           ###   ########.fr       */
+/*   Updated: 2026/09/23 01:16:51 by maddou           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,6 +32,7 @@ import com.filmexa.stream.modules.moviesExternal.dto.response.TrendingMoviesResp
 import com.filmexa.stream.modules.moviesExternal.dto.tmdb.MovieDetailsProviderData;
 import com.filmexa.stream.modules.moviesExternal.dto.tmdb.MovieDetailsProviderResponse;
 import com.filmexa.stream.modules.moviesExternal.dto.tmdb.request.TmdbMovieDiscoverRequest;
+import com.filmexa.stream.modules.moviesExternal.dto.tmdb.trailer.TrailerData;
 import com.filmexa.stream.modules.moviesExternal.enums.MovieSort;
 import com.filmexa.stream.modules.moviesExternal.dto.tmdb.TmdbMoviesPageableResponse;
 import com.filmexa.stream.modules.moviesExternal.dto.tmdb.MovieProvederData;
@@ -221,11 +222,17 @@ public class MovieServiceImpl implements MovieService {
                 movie.getProfile_path() != null ? this.imageBaseUrl + movie.getProfile_path() : null,
                 movie.getCharacter()
             )).toList();
+        // get trailer 
+        List< TrailerData > trailer = this.movieProvider.getTraierMovie(id)
+             .stream()
+            .filter( movie -> movie.getType().equals("Trailer") )
+            .toList();
         List< String > genres = movieDetails.getGenres()
             .stream()
             .map( genre -> genre.getName() )
             .toList();
         // generate movies details application 
+        
         return new MovieDetailsResponse(
             movieDetails.getId(),
             movieDetails.getBackdrop_path() != null ? this.imageBaseUrl + movieDetails.getBackdrop_path() : null,
@@ -235,6 +242,7 @@ public class MovieServiceImpl implements MovieService {
             movieDetails.getTitle(),
             movieDetails.getImdb_id(),
             movieDetails.getVote_average(),
+            "https://www.youtube.com/watch?v=" + trailer.get(0).getKey(),
             actors
         );
     }
