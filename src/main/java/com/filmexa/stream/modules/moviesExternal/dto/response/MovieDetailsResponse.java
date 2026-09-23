@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   MovieDetailsResponse.java                          :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
+/*   By: maddou <maddou@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/17 23:31:37 by maddou            #+#    #+#             */
-/*   Updated: 2026/09/22 14:11:53 by marouan          ###   ########.fr       */
+/*   Updated: 2026/09/23 01:03:43 by maddou           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,5 +31,6 @@ public class MovieDetailsResponse {
     String title;
     String imdbId;
     Double rating;
+    String trailer;
     List< ActorResponse > actors;
 }

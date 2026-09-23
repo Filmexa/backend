@@ -29,5 +29,6 @@ public class TrendingMoviesResponse {
     String      backdropUrl;
     String      overview;
     Double      rating;
+    String      trailer;
     List<String> genres;
 }

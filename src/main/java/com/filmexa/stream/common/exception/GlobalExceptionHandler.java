@@ -32,6 +32,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 
 
 import com.filmexa.stream.common.utils.ErrorResponse;
+import com.filmexa.stream.modules.streaming.exception.StreamNotReadyException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -151,6 +152,21 @@ public class GlobalExceptionHandler {
         );
     }
     
+    /**
+     * The requested part of the movie is not on disk yet. Retry-After tells the player
+     * to buffer and come back rather than giving up on the stream.
+     */
+    @ExceptionHandler( StreamNotReadyException.class )
+    public ResponseEntity<ErrorResponse> handleStreamNotReady( StreamNotReadyException ex ) {
+        return ResponseEntity
+                .status( HttpStatus.SERVICE_UNAVAILABLE )
+                .header( "Retry-After", String.valueOf( ex.getRetryAfterSeconds() ) )
+                .body( new ErrorResponse(
+                        HttpStatus.SERVICE_UNAVAILABLE.value(),
+                        ex.getMessage()
+                ) );
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleUnexpectedException( Exception ex ) {
         System.out.println(ex.getMessage());

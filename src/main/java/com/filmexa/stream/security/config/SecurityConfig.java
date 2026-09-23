@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   SecurityConfig.java                                :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: maddou <maddou@student.42.fr>              +#+  +:+       +#+        */
+/*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/08 18:34:10 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/09/20 01:13:22 by maddou           ###   ########.fr       */
+/*   Updated: 2026/09/23 16:41:33 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -68,15 +68,6 @@ public class SecurityConfig {
 			"/api/auth/facebook/callback"
 	};
 
-	private static final String[] PUBLIC_WHITELIST = {
-			"/api/movie-categories/**",
-			"/api/movies/trending/week",
-			"/api/movies/home",
-			"/api/movies/genre/*",
-			"/api/search/**",
-			
-	};
-
 	private final UserDetailsService userDetailsService;
 	private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
@@ -93,7 +84,6 @@ public class SecurityConfig {
 		http.authorizeHttpRequests(auth -> auth
 						.requestMatchers(SWAGGER_WHITELIST).permitAll()
 						.requestMatchers(AUTH_WHITELIST).permitAll()
-						.requestMatchers(PUBLIC_WHITELIST).permitAll()
 						.requestMatchers("/error").permitAll()
 						.anyRequest().authenticated())
 				.cors(cors -> cors.configurationSource(corsConfigurationSource()))
@@ -110,6 +100,7 @@ public class SecurityConfig {
 		configuration.setAllowedOrigins(allowedOrigins);
 		configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
 		configuration.setAllowedHeaders(List.of("*"));
+		configuration.setExposedHeaders(List.of("Retry-After"));
 		configuration.setAllowCredentials(true);
 
 		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

@@ -6,7 +6,7 @@
 /*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/14 12:33:45 by maddou            #+#    #+#             */
-/*   Updated: 2026/09/22 15:29:16 by marouan          ###   ########.fr       */
+/*   Updated: 2026/09/23 11:35:57 by marouan          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -43,6 +43,8 @@ import com.filmexa.stream.common.exception.InvalidPaginationException;
 @Service
 public class MovieServiceImpl implements MovieService {
 
+    private static final String YOUTUBE_WATCH_URL = "https://www.youtube.com/watch?v=";
+
     private final MovieProvider movieProvider;
     private final MovieMapper   movieMapper;
     
@@ -70,6 +72,7 @@ public class MovieServiceImpl implements MovieService {
             movie.getBackdrop_path() != null ? this.imageBaseUrl + movie.getBackdrop_path() : "",
             movie.getOverview(),
             movie.getVote_average(),
+            this.trailerUrl( movie.getId().intValue() ),
             movie.getGenre_ids()
                 .stream()
                 .map( id -> MovieGenreMapper.getName( id, language ) )
@@ -164,20 +167,28 @@ public class MovieServiceImpl implements MovieService {
         if ( pageNumber > 500 || pageNumber < 1 ) {
             throw new InvalidPaginationException( "Invalid page: Pages start at 1 and max at 500. They are expected to be an integer." );
         }
+       
+        if ( query.getGenreId() != null && 
+            MovieGenreMapper.getName( query.getGenreId(), query.getLanguage() ) == null ) {
+            throw new NotFoundException( "Genre does not exist" );
+        }
+       
         // IF --> user send to me title use search api provider before filtring using application code 
         if ( query.getQuery() == null ) {
+            
             TmdbMovieDiscoverRequest providerRequest = new TmdbMovieDiscoverRequest(
                 query.getLanguage(),
-                query.getGenreId(),
+                query.getGenreId() != null && query.getGenreId() == 100 ? null : query.getGenreId(),
                 query.getYear(),
                 query.getMinRating(),
-                mapSort( query.getSortBy()),
+                query.getGenreId() != null && query.getGenreId() == 100 ? mapSort( MovieSort.RATING ) : mapSort( query.getSortBy() ),
                 pageNumber
             );
+            System.out.println(providerRequest);
             TmdbMoviesPageableResponse movies = movieProvider.discoverMovies( providerRequest );
             return new MoviePageResponse(
                 movies.getPage(),
-                movies.getTotal_pages(),
+                movies.getTotal_pages() > 500 ? 500 : movies.getTotal_pages(),
                 movies.getResults().size(),
                 movies.getResults()
                     .stream()
@@ -186,6 +197,7 @@ public class MovieServiceImpl implements MovieService {
             );
             
         }
+        System.out.println(query.getGenreId()); 
         List<MovieDetailsProviderData> movies = movieProvider.searchMovieByQuery( 
                query.getLanguage(), 
                query.getQuery(), 
@@ -220,6 +232,7 @@ public class MovieServiceImpl implements MovieService {
             .map( genre -> genre.getName() )
             .toList();
         // generate movies details application 
+        
         return new MovieDetailsResponse(
             movieDetails.getId(),
             movieDetails.getBackdrop_path() != null ? this.imageBaseUrl + movieDetails.getBackdrop_path() : null,
@@ -229,8 +242,22 @@ public class MovieServiceImpl implements MovieService {
             movieDetails.getTitle(),
             movieDetails.getImdb_id(),
             movieDetails.getVote_average(),
+            this.trailerUrl( id ),
             actors
         );
+    }
+
+    /**
+     * The YouTube URL of a movie's first trailer, or null when the provider has none.
+     * TMDB does not return videos with its list endpoints, so this costs one call per movie.
+     */
+    private String trailerUrl( Integer movieId ) {
+        return this.movieProvider.getTraierMovie( movieId )
+            .stream()
+            .filter( video -> "Trailer".equals( video.getType() ) )
+            .findFirst()
+            .map( video -> YOUTUBE_WATCH_URL + video.getKey() )
+            .orElse( null );
     }
 
     private Map<String, List<MovieResponse>> generateHomeMoviesData(
@@ -268,9 +295,11 @@ public class MovieServiceImpl implements MovieService {
             List<MovieDetailsProviderData> movies,
             MovieSearchQuery query
     ) {
+        
         List<MovieDetailsProviderData> filteredMovies = movies
             .stream()
             .filter(movie -> query.getGenreId() == null
+                    || query.getGenreId().equals(100)
                     || movie.getGenreIds() != null
                     && movie.getGenreIds().contains( query.getGenreId() ))
 

@@ -28,6 +28,7 @@ public class MovieProvederData {
     Integer     id;
     String      title;
     String      backdrop_path; 
+    String      poster_path;
     String      imdb_id;
     List< GenreProviderData > genres;
     String      overview; 
