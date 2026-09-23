@@ -68,16 +68,6 @@ public class SecurityConfig {
 			"/api/auth/facebook/callback"
 	};
 
-	private static final String[] PUBLIC_WHITELIST = {
-			"/api/movie-categories/**",
-			"/api/movies/trending/week",
-			"/api/movies/*",
-			"/api/movies/home",
-			"/api/movies/genre/*",
-			"/api/search/**",
-			
-	};
-
 	private final UserDetailsService userDetailsService;
 	private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
@@ -94,7 +84,6 @@ public class SecurityConfig {
 		http.authorizeHttpRequests(auth -> auth
 						.requestMatchers(SWAGGER_WHITELIST).permitAll()
 						.requestMatchers(AUTH_WHITELIST).permitAll()
-						.requestMatchers(PUBLIC_WHITELIST).permitAll()
 						.requestMatchers("/error").permitAll()
 						.anyRequest().authenticated())
 				.cors(cors -> cors.configurationSource(corsConfigurationSource()))
