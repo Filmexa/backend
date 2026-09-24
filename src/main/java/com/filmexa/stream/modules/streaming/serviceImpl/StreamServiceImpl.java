@@ -27,7 +27,6 @@ import com.filmexa.stream.modules.download.entity.MovieDownload;
 import com.filmexa.stream.modules.download.enums.DownloadStatus;
 import com.filmexa.stream.modules.download.repo.MovieDownloadRepository;
 import com.filmexa.stream.modules.download.dto.DownloadRequestDto;
-import com.filmexa.stream.modules.download.magnet.MagnetResolver;
 import com.filmexa.stream.modules.download.service.TorrentDownloadService;
 import com.filmexa.stream.modules.streaming.config.StreamProperties;
 import com.filmexa.stream.modules.streaming.dto.MediaInfo;
@@ -43,8 +42,10 @@ import com.filmexa.stream.modules.streaming.playlist.PlaylistBuilder;
 import com.filmexa.stream.modules.streaming.security.StreamTokenService;
 import com.filmexa.stream.modules.streaming.service.StreamService;
 import com.filmexa.stream.modules.streaming.util.Languages;
+import com.filmexa.stream.modules.torrent.service.TorrentService;
 import com.filmexa.stream.modules.users.entity.User;
 import com.filmexa.stream.modules.users.enums.PreferredLanguage;
+import com.filmexa.stream.modules.torrent.dto.TorrentResultDto;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -63,7 +64,7 @@ public class StreamServiceImpl implements StreamService {
     private final StreamProperties properties;
     private final TorrentDownloadService torrentDownloadService;
     private final MovieDownloadRepository movieDownloadRepository;
-    private final MagnetResolver magnetResolver;
+    private final TorrentService torrentService;
 
     @Value("${app.video-storage-path:./data/movies}")
     private String videoStoragePath;
@@ -71,8 +72,8 @@ public class StreamServiceImpl implements StreamService {
     private final Map<Long, MediaInfo> probes = new ConcurrentHashMap<>();
 
     @Override
-    public StreamSessionDto createSession(Long movieId, User viewer) {
-        MovieDownload download = ensureDownloadStarted(movieId);
+    public StreamSessionDto createSession(Long movieId, String imdbId, User viewer) {
+        MovieDownload download = ensureDownloadStarted(movieId, imdbId);
 
         MediaInfo info;
         try {
@@ -106,7 +107,7 @@ public class StreamServiceImpl implements StreamService {
      * Makes sure a download exists and is running for this movie, resolving a magnet the
      * first time. The frontend never supplies the magnet - it only knows the movie id.
      */
-    private MovieDownload ensureDownloadStarted(Long movieId) {
+    private MovieDownload ensureDownloadStarted(Long movieId, String  imdbId) {
         Optional<MovieDownload> existing = movieDownloadRepository.findByMovieId(movieId);
 
         if (existing.isPresent()) {
@@ -129,11 +130,17 @@ public class StreamServiceImpl implements StreamService {
                     movieId, status);
         }
 
-        DownloadRequestDto request = new DownloadRequestDto();
-        request.setMovieId(movieId);
-        request.setMagnetUrl(magnetResolver.resolve(movieId));
+        Optional<TorrentResultDto> torrent = torrentService.resolve(imdbId);
 
-        return torrentDownloadService.startDownload(request);
+        if (torrent.isPresent()) {
+            // Mohssin part (Download)
+            DownloadRequestDto request = new DownloadRequestDto();
+            request.setMovieId(movieId);
+            System.out.println("Magnet URL: " + torrent.get().getMagnet());
+            request.setMagnetUrl(torrent.get().getMagnet());
+            return torrentDownloadService.startDownload(request);
+        }
+        throw new RuntimeException("Failed to resolve torrent for movie: " + imdbId);
     }
 
     private StreamSessionDto preparing(Long movieId, MovieDownload download) {

@@ -9,7 +9,7 @@ import com.filmexa.stream.modules.streaming.enums.Resolution;
 public interface StreamService {
 
     /** Issues a stream token and describes how the client should play this movie. */
-    StreamSessionDto createSession(Long movieId, User viewer);
+    StreamSessionDto createSession(Long movieId, String imdbId, User viewer);
 
     String masterPlaylist(Long movieId, String token);
 
