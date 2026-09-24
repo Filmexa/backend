@@ -71,6 +71,7 @@ public class SecurityConfig {
 	private static final String[] PUBLIC_WHITELIST = {
 			"/api/movie-categories/**",
 			"/api/movies/**",
+			"/api/downloads/**"
 	};
 
 	private final UserDetailsService userDetailsService;
