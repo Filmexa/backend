@@ -52,7 +52,10 @@ public class PirateBayClient implements TorrentClient{
                 torrent.getLeechers(),
                 this.formatSize( Long.parseLong( torrent.getSize() ) ),
                 Long.parseLong( torrent.getSize() ),
-                this.parser.extractQuality( torrent.getName() )
+                this.parser.extractQuality(torrent.getName()),
+                this.parser.extractSource(torrent.getName()),
+                this.parser.extractVideoCodec(torrent.getName()),
+                torrent.getName()
             ))
             .toList();
     }

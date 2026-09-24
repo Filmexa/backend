@@ -6,7 +6,7 @@
 /*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/20 17:48:28 by marouan           #+#    #+#             */
-/*   Updated: 2026/09/22 13:01:14 by marouan          ###   ########.fr       */
+/*   Updated: 2026/09/24 14:06:58 by marouan          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -51,7 +51,10 @@ public class YtsClient implements TorrentClient {
                 torrent.getPeers(),
                 torrent.getSize(),
                 torrent.getSize_bytes(),
-                torrent.getQuality() 
+                torrent.getQuality(),
+                torrent.getType(),
+                torrent.getVideo_codec(),
+                null
             ))
             .toList();
     }

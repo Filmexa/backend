@@ -28,6 +28,11 @@ public class TorrentResultDto {
     private String  size;
     private Long  sizeBytes;
     private String  quality;
+
+    // subtitle
+    private String source;
+    private String videoCodec;
+    private String releaseName;
 }
 // https://movies-api.accel.li/api/v2/movie_details.json?imdb_id=tt1375666
 // // yts
