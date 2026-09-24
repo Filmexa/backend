@@ -6,7 +6,7 @@
 /*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/21 11:28:14 by marouan           #+#    #+#             */
-/*   Updated: 2026/09/22 12:57:46 by marouan          ###   ########.fr       */
+/*   Updated: 2026/09/24 14:03:43 by marouan          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,4 +28,5 @@ public class YtsTorrentDto {
     private Integer seeds;
     private Integer peers;
     private Long    size_bytes; 
+    private String  video_codec;
 }
