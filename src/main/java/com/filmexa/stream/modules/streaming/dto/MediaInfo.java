@@ -11,11 +11,11 @@ import java.util.List;
  * @param width           source width in pixels
  * @param height          source height, which caps the resolution ladder
  * @param durationSeconds total runtime, used to lay out the segment list
- * @param audioLanguage   ISO code of the first audio track ("eng"), or "und" when untagged -
- *                        compared against the viewer's preferred language to decide whether
- *                        subtitles should come up automatically
+ * @param audioTracks     every audio stream in the file, in -map order. A release often
+ *                        ships the original language alongside dubs, so which one to play
+ *                        is a choice rather than simply the first
  * @param subtitles       every subtitle stream in the file, convertible or not
  */
 public record MediaInfo(Path file, int width, int height, double durationSeconds,
-                        String audioLanguage, List<SubtitleTrack> subtitles) {
+                        List<AudioTrack> audioTracks, List<SubtitleTrack> subtitles) {
 }

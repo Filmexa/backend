@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -129,12 +130,33 @@ public class TorrentServiceImpl implements TorrentService{
             .filter(torrent -> qualityRank(torrent.getQuality()) >= 0)
             .max(
                 Comparator
-                    .comparing((TorrentResultDto torrent) -> torrent.getSeeds() )
+                    .comparing((TorrentResultDto torrent) -> !isDubbed( torrent.getReleaseName() ))
+                    .thenComparing((TorrentResultDto torrent) -> torrent.getSeeds() )
                     .thenComparing(
                         (TorrentResultDto torrent) ->
                             qualityRank(torrent.getQuality())
                     )
             );
+    }
+
+    /**
+     * Tags a release carries when its audio is a dub rather than the original.
+     *
+     * <p>MULTi and DUAL mean several audio tracks, VF/VFF/VFQ/TRUEFRENCH French ones,
+     * DUBBED and Dublado say so outright. VOSTFR is deliberately absent: it means original
+     * audio with French subtitles, which is exactly what we want.
+     */
+    private static final Pattern DUB_MARKERS = Pattern.compile(
+        "\\b(multi|dual|dubbed|dublado|doublage|vf|vff|vfq|vfi|truefrench|hindi ?dub|dual ?audio)\\b",
+        Pattern.CASE_INSENSITIVE);
+
+    /**
+     * Only a hint, never a filter: release names are free text, so a wrong guess must cost
+     * the torrent its place in the ranking rather than remove it from the list entirely.
+     */
+    private boolean isDubbed( String releaseName ) {
+
+        return releaseName != null && DUB_MARKERS.matcher(releaseName).find();
     }
 
     private int qualityRank(String quality) {

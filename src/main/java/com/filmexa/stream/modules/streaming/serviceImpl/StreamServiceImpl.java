@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -29,6 +30,7 @@ import com.filmexa.stream.modules.download.repo.MovieDownloadRepository;
 import com.filmexa.stream.modules.download.dto.DownloadRequestDto;
 import com.filmexa.stream.modules.download.service.TorrentDownloadService;
 import com.filmexa.stream.modules.streaming.config.StreamProperties;
+import com.filmexa.stream.modules.streaming.dto.AudioTrack;
 import com.filmexa.stream.modules.streaming.dto.MediaInfo;
 import com.filmexa.stream.modules.streaming.dto.StreamSessionDto;
 import com.filmexa.stream.modules.streaming.dto.SubtitleTrack;
@@ -42,6 +44,8 @@ import com.filmexa.stream.modules.streaming.playlist.PlaylistBuilder;
 import com.filmexa.stream.modules.streaming.security.StreamTokenService;
 import com.filmexa.stream.modules.streaming.service.StreamService;
 import com.filmexa.stream.modules.streaming.util.Languages;
+import com.filmexa.stream.modules.moviesExternal.client.MovieProvider;
+import com.filmexa.stream.modules.moviesExternal.dto.tmdb.MovieProvederData;
 import com.filmexa.stream.modules.torrent.service.TorrentService;
 import com.filmexa.stream.modules.users.entity.User;
 import com.filmexa.stream.modules.users.enums.PreferredLanguage;
@@ -58,6 +62,16 @@ public class StreamServiceImpl implements StreamService {
     private static final Set<String> VIDEO_EXTENSIONS =
             Set.of("mp4", "mkv", "avi", "mov", "m4v", "webm", "wmv", "flv", "mpg", "mpeg", "ts");
 
+    /**
+     * Subtitles are offered in English, French and Arabic only. Deriving the set from
+     * PreferredLanguage rather than listing the codes again keeps the menu in step with
+     * the languages a viewer can actually choose, so the two cannot drift apart.
+     */
+    private static final Set<String> OFFERED_SUBTITLE_LANGUAGES =
+            Stream.of(PreferredLanguage.values())
+                    .map(PreferredLanguage::getDisplayName)
+                    .collect(Collectors.toUnmodifiableSet());
+
     private final Ffmpeg ffmpeg;
     private final PlaylistBuilder playlistBuilder;
     private final StreamTokenService streamTokenService;
@@ -65,11 +79,15 @@ public class StreamServiceImpl implements StreamService {
     private final TorrentDownloadService torrentDownloadService;
     private final MovieDownloadRepository movieDownloadRepository;
     private final TorrentService torrentService;
+    private final MovieProvider movieProvider;
 
     @Value("${app.video-storage-path:./data/movies}")
     private String videoStoragePath;
 
     private final Map<Long, MediaInfo> probes = new ConcurrentHashMap<>();
+
+    /** TMDB's original_language per movie. One lookup per movie, then served from memory. */
+    private final Map<Long, String> originalLanguages = new ConcurrentHashMap<>();
 
     @Override
     public StreamSessionDto createSession(Long movieId, String imdbId, User viewer) {
@@ -194,12 +212,13 @@ public class StreamServiceImpl implements StreamService {
         }
 
         requireDownloaded(movieId, info, segmentIndex);
-        return new Segment(info, resolution, segmentIndex);
+        return new Segment(info, resolution, segmentIndex, originalAudioIndex(movieId, info));
     }
 
     @Override
     public byte[] segmentBytes(Segment segment) {
-        return ffmpeg.encodeSegment(segment.info(), segment.resolution(), segment.index());
+        return ffmpeg.encodeSegment(segment.info(), segment.resolution(), segment.index(),
+                segment.audioTrackIndex());
     }
 
     @Override
@@ -209,6 +228,7 @@ public class StreamServiceImpl implements StreamService {
         SubtitleTrack track = info.subtitles().stream()
                 .filter(candidate -> candidate.index() == trackIndex)
                 .filter(SubtitleTrack::convertible)
+                .filter(this::offered)
                 .findFirst()
                 .orElseThrow(() -> new NotFoundException(
                         "No convertible subtitle track " + trackIndex + " for movie " + movieId));
@@ -254,10 +274,11 @@ public class StreamServiceImpl implements StreamService {
     /**
      * Builds the subtitle menu for one viewer.
      *
-     * <p>Every convertible track is offered, so anything in the file stays selectable. On
-     * top of that the subject asks for a track to be *active* when the viewer would not
-     * understand the audio: if the movie's audio language differs from their preferred
-     * language, the matching subtitle is marked as the default, falling back to English.
+     * <p>Every convertible track in an offered language is listed, so anything the viewer
+     * could read stays selectable. On top of that the subject asks for a track to be
+     * *active* when the viewer would not understand the audio: if the movie's audio
+     * language differs from their preferred language, the matching subtitle is marked as
+     * the default, falling back to English.
      * When the audio is already in their language nothing is auto-enabled.
      *
      * <p>The list is ordered preferred-language first, then English, so the browser's own
@@ -265,11 +286,12 @@ public class StreamServiceImpl implements StreamService {
      */
     private List<SubtitleTrackDto> subtitlesFor(Long movieId, MediaInfo info, String token, User viewer) {
         String preferred = preferredLanguageOf(viewer);
-        String audio = Languages.toBcp47(info.audioLanguage());
+        String audio = Languages.toBcp47(playedAudioTrack(movieId, info).language());
         boolean viewerUnderstandsAudio = preferred.equals(audio);
 
         List<SubtitleTrack> usable = new ArrayList<>(info.subtitles().stream()
                 .filter(SubtitleTrack::convertible)
+                .filter(this::offered)
                 .toList());
 
         usable.sort(Comparator
@@ -289,6 +311,66 @@ public class StreamServiceImpl implements StreamService {
                 .toList();
     }
 
+    /**
+     * The audio stream to play: the one in the film's original language.
+     *
+     * <p>A release commonly muxes a dub ahead of the original, so the first stream is not a
+     * safe default. TMDB knows what the film was shot in, which is the only reliable
+     * signal - the file's own tags say what each track is, never which is the original.
+     *
+     * <p>Falls back to the first track when TMDB has no answer or the file carries nothing
+     * in that language, which is also the right answer for a single-audio release.
+     */
+    private AudioTrack playedAudioTrack(Long movieId, MediaInfo info) {
+        if (info.audioTracks().isEmpty()) {
+            return new AudioTrack(0, "und", null);
+        }
+        AudioTrack first = info.audioTracks().get(0);
+
+        String original = originalLanguageOf(movieId);
+        if (original == null || original.isBlank()) {
+            return first;
+        }
+
+        return info.audioTracks().stream()
+                .filter(track -> Languages.toBcp47(track.language()).equals(original))
+                .findFirst()
+                .orElse(first);
+    }
+
+    private int originalAudioIndex(Long movieId, MediaInfo info) {
+        return playedAudioTrack(movieId, info).index();
+    }
+
+    /**
+     * TMDB's original_language for this movie, or null when it cannot be reached. A failure
+     * here must not stop playback, so it degrades to "use the first audio track".
+     */
+    private String originalLanguageOf(Long movieId) {
+        String cached = originalLanguages.get(movieId);
+        if (cached != null) {
+            return cached;
+        }
+
+        String language;
+        try {
+            MovieProvederData movie = movieProvider.getMovieById("en-US", movieId.intValue());
+            language = movie == null ? null : movie.getOriginal_language();
+        } catch (RuntimeException e) {
+            log.warn("Could not read original language for movie {}: {}", movieId, e.getMessage());
+            return null;
+        }
+
+        if (language == null || language.isBlank()) {
+            return null;
+        }
+        // Only a real answer is cached: caching the failure would pin this movie to the
+        // wrong audio track until the next restart, for what may be a passing outage.
+        String normalised = language.trim().toLowerCase(Locale.ROOT);
+        originalLanguages.put(movieId, normalised);
+        return normalised;
+    }
+
     /** The viewer's language, or English when they have not set one. */
     private String preferredLanguageOf(User viewer) {
         PreferredLanguage preference = viewer == null ? null : viewer.getPreferredLanguage();
@@ -302,6 +384,19 @@ public class StreamServiceImpl implements StreamService {
                 .findFirst()
                 .or(() -> usable.stream().filter(track -> matches(track, "en")).findFirst())
                 .orElse(null);
+    }
+
+    /**
+     * Whether a track belongs in the menu at all.
+     *
+     * <p>Excluded: languages we do not offer, untagged tracks, forced tracks - which only
+     * cover signs and foreign dialogue, so they look like a broken full subtitle - and SDH,
+     * whose sound-effect and speaker annotations are noise to a viewer who can hear.
+     */
+    private boolean offered(SubtitleTrack track) {
+        return OFFERED_SUBTITLE_LANGUAGES.contains(Languages.toBcp47(track.language()))
+                && !track.forced()
+                && !track.hearingImpaired();
     }
 
     private boolean matches(SubtitleTrack track, String bcp47) {

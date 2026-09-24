@@ -21,7 +21,9 @@ class PlaylistBuilderTest {
         builder = new PlaylistBuilder(properties);
 
         // 20 seconds: three full segments plus a 2 second tail.
-        info = new MediaInfo(java.nio.file.Path.of("movie.mkv"), 1920, 1080, 20, "eng", java.util.List.of());
+        info = new MediaInfo(java.nio.file.Path.of("movie.mkv"), 1920, 1080, 20,
+                java.util.List.of(new com.filmexa.stream.modules.streaming.dto.AudioTrack(0, "eng", null)),
+                java.util.List.of());
     }
 
     @Test

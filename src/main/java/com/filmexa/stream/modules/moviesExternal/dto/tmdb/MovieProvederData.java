@@ -30,6 +30,8 @@ public class MovieProvederData {
     String      backdrop_path; 
     String      poster_path;
     String      imdb_id;
+    /** ISO 639-1 code of the language the film was shot in, e.g. "en", "ko". */
+    String      original_language;
     List< GenreProviderData > genres;
     String      overview; 
     String      release_date;

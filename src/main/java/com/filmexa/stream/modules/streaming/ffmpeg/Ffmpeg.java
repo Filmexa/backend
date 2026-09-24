@@ -15,6 +15,7 @@ import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.filmexa.stream.modules.streaming.config.StreamProperties;
+import com.filmexa.stream.modules.streaming.dto.AudioTrack;
 import com.filmexa.stream.modules.streaming.dto.MediaInfo;
 import com.filmexa.stream.modules.streaming.dto.SubtitleTrack;
 import com.filmexa.stream.modules.streaming.enums.Resolution;
@@ -97,7 +98,7 @@ public class Ffmpeg {
                     video.path("width").asInt(0),
                     video.path("height").asInt(0),
                     duration,
-                    audioLanguage(root),
+                    audioTracks(root),
                     subtitleTracks(root));
 
             log.info("Probed {}: {}x{}, {}s, {} subtitle track(s)", file.getFileName(),
@@ -129,7 +130,8 @@ public class Ffmpeg {
      * its timestamps where the playlist says they belong, keeping the player's timeline
      * continuous across segments.
      */
-    public byte[] encodeSegment(MediaInfo info, Resolution resolution, int segmentIndex) {
+    public byte[] encodeSegment(MediaInfo info, Resolution resolution, int segmentIndex,
+                               int audioTrackIndex) {
         double start = (double) segmentIndex * properties.getSegmentSeconds();
         int videoKbps = resolution.getVideoBitrateKbps();
 
@@ -144,7 +146,9 @@ public class Ffmpeg {
                 "-i", info.file().toString(),
                 "-t", String.valueOf(properties.getSegmentSeconds()),
                 "-map", "0:v:0",
-                "-map", "0:a:0?",
+                // The original-language track, which is not always the first one the
+                // file lists - a dub is often muxed ahead of it.
+                "-map", "0:a:" + audioTrackIndex + "?",
                 "-vf", "scale=-2:" + resolution.getHeight(),
                 "-c:v", "libx264",
                 "-preset", properties.getPreset(),
@@ -236,14 +240,37 @@ public class Ffmpeg {
         }
     }
 
-    /** ISO code of the first audio stream, or "und" when the file does not say. */
-    private String audioLanguage(JsonNode probe) {
+    /** Every audio stream in the file, in the order ffmpeg's {@code -map 0:a:N} counts them. */
+    private List<AudioTrack> audioTracks(JsonNode probe) {
+        List<AudioTrack> tracks = new ArrayList<>();
+        int index = 0;
+
         for (JsonNode stream : probe.path("streams")) {
-            if ("audio".equals(stream.path("codec_type").asText())) {
-                return stream.path("tags").path("language").asText("und");
+            if (!"audio".equals(stream.path("codec_type").asText())) {
+                continue;
             }
+            JsonNode tags = stream.path("tags");
+            tracks.add(new AudioTrack(
+                    index++,
+                    tags.path("language").asText("und"),
+                    tags.path("title").asText(null)));
         }
-        return "und";
+        return tracks;
+    }
+
+    /**
+     * Plenty of rips leave the disposition flags at zero and say it in the track name
+     * instead, so the name is checked too. "CC" and "HI" are left out on purpose: two
+     * letters match far too much by accident.
+     */
+    private static final java.util.regex.Pattern FORCED_TITLE =
+            java.util.regex.Pattern.compile("\\bforced\\b", java.util.regex.Pattern.CASE_INSENSITIVE);
+
+    private static final java.util.regex.Pattern SDH_TITLE = java.util.regex.Pattern.compile(
+            "\\bsdh\\b|hearing[ -]?impaired|closed[ -]?caption", java.util.regex.Pattern.CASE_INSENSITIVE);
+
+    private static String nullToEmpty(String value) {
+        return value == null ? "" : value;
     }
 
     /** Subtitle codecs that carry actual text, and so have a WebVTT equivalent. */
@@ -266,12 +293,17 @@ public class Ffmpeg {
             }
             String codec = stream.path("codec_name").asText("").toLowerCase(Locale.ROOT);
             JsonNode tags = stream.path("tags");
+            JsonNode disposition = stream.path("disposition");
+            String title = tags.path("title").asText(null);
 
             tracks.add(new SubtitleTrack(
                     index++,
                     tags.path("language").asText("und"),
-                    tags.path("title").asText(null),
-                    TEXT_SUBTITLE_CODECS.contains(codec)));
+                    title,
+                    TEXT_SUBTITLE_CODECS.contains(codec),
+                    disposition.path("forced").asInt(0) == 1 || FORCED_TITLE.matcher(nullToEmpty(title)).find(),
+                    disposition.path("hearing_impaired").asInt(0) == 1
+                            || SDH_TITLE.matcher(nullToEmpty(title)).find()));
         }
         return tracks;
     }

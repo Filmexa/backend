@@ -28,6 +28,10 @@ public interface StreamService {
      */
     java.nio.file.Path subtitle(Long movieId, int trackIndex);
 
-    record Segment(MediaInfo info, Resolution resolution, int index) {
+    /**
+     * @param audioTrackIndex which of the file's audio streams to encode - the original
+     *                        language, resolved once when the session is prepared
+     */
+    record Segment(MediaInfo info, Resolution resolution, int index, int audioTrackIndex) {
     }
 }
