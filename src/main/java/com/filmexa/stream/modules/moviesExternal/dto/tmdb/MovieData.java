@@ -17,8 +17,6 @@ import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import java.util.List;
 
-import com.filmexa.stream.modules.moviesExternal.dto.tmdb.MoviesProviderData;
-
 @Data
 @AllArgsConstructor
 @NoArgsConstructor

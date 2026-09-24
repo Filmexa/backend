@@ -31,7 +31,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/api/movies/{movieId}/comments")
+@RequestMapping("/api/movie/{movieId}/comments")
 @RequiredArgsConstructor
 @Tag(name = "Comments", description = "Movie comment APIs")
 public class CommentController {
@@ -43,7 +43,7 @@ public class CommentController {
             @PathVariable Long movieId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        PageRequest pageRequest = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        PageRequest pageRequest = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "createdAt"));
         return ResponseEntity.ok(commentService.getCommentsByMovieId(movieId, pageRequest));
     }
 

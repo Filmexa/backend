@@ -1,3 +1,14 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   MovieQuery.java                                    :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2026/09/16 15:52:37 by marouan           #+#    #+#             */
+/*   Updated: 2026/09/17 12:15:54 by marouan          ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
 
 package com.filmexa.stream.modules.moviesExternal.dto.request;
 
@@ -15,5 +26,5 @@ public class MovieQuery {
         regexp = "^(en|fr|ar)$",
         message = "Language must be en, fr, or ar"
     )
-    private String language;
+    private String language = "en";
 } 

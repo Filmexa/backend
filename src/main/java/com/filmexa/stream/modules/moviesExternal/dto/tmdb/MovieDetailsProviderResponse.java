@@ -1,7 +1,7 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   TrendingMovieProviderResponse.java                        :+:      :+:    :+:   */
+/*   MovieDetailsProviderResponse.java                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: maddou <maddou@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
@@ -20,12 +20,13 @@ import java.util.List;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class TrendingMovieProviderResponse {
+public class MovieDetailsProviderResponse {
     Long    id;
     String  title;
     String  release_date;
     String  poster_path;
     String  backdrop_path;
     String  overview;
+    Double  vote_average;
     List<Integer> genre_ids;
 }

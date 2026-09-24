@@ -28,7 +28,7 @@ public class TorrentDownloadServiceImpl implements TorrentDownloadService {
 
     @Override
     public MovieDownload startDownload(DownloadRequestDto request) {
-        long movieId = request.getMovieId();
+        Long movieId = request.getMovieId();
         String magnetUrl = request.getMagnetUrl();
 
         // 1. Check if this movie is already in our database
@@ -71,12 +71,17 @@ public class TorrentDownloadServiceImpl implements TorrentDownloadService {
     }
 
     @Override
-    public void stopDownload(long movieId) {
+    public void stopDownload(Long movieId) {
         torrentDownloadWorker.stopDownload(movieId);
     }
 
     @Override
-    public DownloadProgressDto getProgress(long movieId) {
+    public boolean isActive(Long movieId) {
+        return torrentDownloadWorker.isActive(movieId);
+    }
+
+    @Override
+    public DownloadProgressDto getProgress(Long movieId) {
         DownloadProgressDto activeProgress = torrentDownloadWorker.getProgress(movieId);
         if (activeProgress != null) {
             return activeProgress;
@@ -87,9 +92,16 @@ public class TorrentDownloadServiceImpl implements TorrentDownloadService {
         }
 
         MovieDownload download = existing.get();
-        double progress = (download.getTotalBytes() > 0)
-            ? ((double) download.getDownloadedBytes() / download.getTotalBytes()) * 100.0
-            : (download.getStatus() == DownloadStatus.COMPLETED ? 100.0 : 0.0);
+        // A finished download is 100% by definition - checking the byte counters first
+        // reports 0% for any row written before those counters were persisted.
+        double progress;
+        if (download.getStatus() == DownloadStatus.COMPLETED) {
+            progress = 100.0;
+        } else if (download.getTotalBytes() > 0) {
+            progress = ((double) download.getDownloadedBytes() / download.getTotalBytes()) * 100.0;
+        } else {
+            progress = 0.0;
+        }
 
         return DownloadProgressDto.builder()
             .movieId(download.getMovieId())

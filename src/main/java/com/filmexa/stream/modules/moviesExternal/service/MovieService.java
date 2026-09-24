@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   MovieService.java                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
+/*   By: maddou <maddou@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/14 12:33:09 by maddou            #+#    #+#             */
-/*   Updated: 2026/09/16 13:25:51 by marouan          ###   ########.fr       */
+/*   Updated: 2026/09/20 01:11:53 by maddou           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,12 +15,19 @@ package com.filmexa.stream.modules.moviesExternal.service;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.data.domain.Pageable;
+
 import com.filmexa.stream.modules.moviesExternal.dto.response.TrendingMoviesResponse;
 import com.filmexa.stream.modules.moviesExternal.dto.response.MovieResponse;
-import com.filmexa.stream.modules.moviesExternal.dto.tmdb.MoviesProviderData;
+import com.filmexa.stream.modules.moviesExternal.dto.request.MovieSearchQuery;
+import com.filmexa.stream.modules.moviesExternal.dto.response.MovieDetailsResponse;
+import com.filmexa.stream.modules.moviesExternal.dto.response.MoviePageResponse;
 
 public interface MovieService {
     List< TrendingMoviesResponse > getTrendingMovies( String language ); 
     Map<String, List<MovieResponse>> buildHomeMovies( String language );
-    // /*List< TrendingMoviesResponse > */void getHomeData( String language ); 
+    List<MovieResponse> getMoviesByGenre( String language, Long id );
+    MoviePageResponse getMoviesByGenre( String language, Integer id, Pageable page );
+    MoviePageResponse searchMovie( MovieSearchQuery query, Pageable page );
+    MovieDetailsResponse getMovieById( String language, Integer id );
 }

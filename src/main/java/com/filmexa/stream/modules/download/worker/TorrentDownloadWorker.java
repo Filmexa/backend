@@ -8,6 +8,7 @@ import bt.Bt;
 import bt.data.Storage;
 import bt.data.file.FileSystemStorage;
 import bt.runtime.BtClient;
+import bt.runtime.BtRuntime;
 import lombok.extern.slf4j.Slf4j;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -34,15 +35,22 @@ public class TorrentDownloadWorker {
     private final Map<Long, BtClient> activeClients = new ConcurrentHashMap<>(); 
     private final Map<Long, DownloadProgressDto> progressCache = new ConcurrentHashMap<>();
 
-    public TorrentDownloadWorker(MovieDownloadRepository movieDownloadRepository) {
+    private final BtRuntime btRuntime;
+
+    public TorrentDownloadWorker(MovieDownloadRepository movieDownloadRepository, BtRuntime btRuntime) {
         this.movieDownloadRepository = movieDownloadRepository;
+        this.btRuntime = btRuntime;
     }
 
-    public DownloadProgressDto getProgress(long movieId) {
+    public DownloadProgressDto getProgress(Long movieId) {
         return progressCache.get(movieId);
     }
 
-    public void stopDownload(long movieId) {
+    public boolean isActive(Long movieId) {
+        return activeClients.containsKey(movieId);
+    }
+
+    public void stopDownload(Long movieId) {
         BtClient client = activeClients.remove(movieId);
         if (client != null) {   
             client.stop();
@@ -55,7 +63,7 @@ public class TorrentDownloadWorker {
         }
     }
     @Async("torrentTaskExecutor")
-    public void startDownloadAsync(long movieId, String magnetUrl) {
+    public void startDownloadAsync(Long movieId, String magnetUrl) {
         try {
             log.info("Starting background download for movie: {}", movieId);
             
@@ -65,21 +73,12 @@ public class TorrentDownloadWorker {
             boolean isMp4 = magnetUrl.toLowerCase().contains(".mp4");
             
             // --- STEP 2: Configure & Build BtClient ---
-            Config config = new Config();
-            InetAddress outboundAddress = getOutboundAddress();
-            if (outboundAddress != null) {
-                log.info("Binding BitTorrent engine to active network address: {}", outboundAddress.getHostAddress());
-                config.setAcceptorAddress(outboundAddress);
-            }
-
             Storage storage = new FileSystemStorage(movieDir);
             SequentialPieceSelector selector = new SequentialPieceSelector(isMp4);
-            BtClient client = Bt.client()
-                .config(config)
+            BtClient client = Bt.client(btRuntime)
                 .storage(storage)
                 .magnet(magnetUrl)
                 .selector(selector)
-                .autoLoadModules()
                 .stopWhenDownloaded()
                 .build();
             
@@ -97,16 +96,16 @@ public class TorrentDownloadWorker {
                 AtomicBoolean readyToStreamMarked = new AtomicBoolean(false);
 
                 CompletableFuture<?> future = client.startAsync(sessionState -> {
-                    long downloaded = sessionState.getDownloaded();
-                    long left = sessionState.getLeft();
-                    long total = downloaded + left;
+                    Long downloaded = sessionState.getDownloaded();
+                    Long left = sessionState.getLeft();
+                    Long total = downloaded + left;
 
                     // 1. Calculate speed: (bytes now - bytes 1 second ago)
-                    long prev = previousDownloaded.get();
-                    long speed = downloaded - prev;
+                    Long prev = previousDownloaded.get();
+                    Long speed = downloaded - prev;
                     // safety check
                     if (speed < 0) {
-                        speed = 0;
+                        speed = 0l;
                     }
                     previousDownloaded.set(downloaded);
 

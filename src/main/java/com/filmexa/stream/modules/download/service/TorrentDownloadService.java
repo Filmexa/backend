@@ -9,8 +9,11 @@ public interface TorrentDownloadService {
 
     MovieDownload startDownload(DownloadRequestDto request);
 
-    DownloadProgressDto getProgress(long movieId);
+    DownloadProgressDto getProgress(Long movieId);
 
-    void stopDownload(long movieId);
+    void stopDownload(Long movieId);
+
+    /** True when a torrent client is running for this movie in this process. */
+    boolean isActive(Long movieId);
 
 }

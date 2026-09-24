@@ -6,7 +6,7 @@
 /*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/14 11:16:13 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/09/14 13:05:27 by kchaouki         ###   ########.fr       */
+/*   Updated: 2026/09/22 12:29:48 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,6 +25,8 @@ import java.util.Optional;
 @Repository 
 public interface MovieCategoryRepository extends JpaRepository<MovieCategory, UUID>, JpaSpecificationExecutor<MovieCategory> {
     List<MovieCategory> findAllByActiveTrueOrderByDisplayOrderAsc();
-    Optional<MovieCategory> findByName(String name);
+    Optional<MovieCategory> findByNameEn(String nameEn);
+    Optional<MovieCategory> findByNameFr(String nameFr);
+    Optional<MovieCategory> findByNameAr(String nameAr);
     Optional<MovieCategory> findByGenreId(Long genreId);
 }

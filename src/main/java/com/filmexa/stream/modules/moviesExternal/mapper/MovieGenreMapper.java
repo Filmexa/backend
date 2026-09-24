@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   MovieGenreMapper.java                              :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: maddou <maddou@student.42.fr>              +#+  +:+       +#+        */
+/*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/14 20:52:30 by maddou            #+#    #+#             */
-/*   Updated: 2026/09/14 20:52:52 by maddou           ###   ########.fr       */
+/*   Updated: 2026/09/22 12:26:15 by marouan          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -130,10 +130,19 @@ public class MovieGenreMapper {
             "en", "Western",
             "fr", "Western",
             "ar", "غربي"
+        )),
+        
+        Map.entry(100, Map.of(
+            "en", "Top Rated",
+            "fr", "Les mieux notés",
+            "ar", "الأعلى تقييماً"
         ))
     );
 
-    public static String getName(int id, String language) {
+    public static String getName( Integer id, String language ) {
+        if ( id == null || language == null) {
+            return null;
+        }
         Map<String, String> translations = GENRES.get(id);
 
         if (translations == null) {

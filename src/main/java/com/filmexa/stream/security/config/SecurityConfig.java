@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   SecurityConfig.java                                :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: maddou <maddou@student.42.fr>              +#+  +:+       +#+        */
+/*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/08 18:34:10 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/09/14 20:35:43 by maddou           ###   ########.fr       */
+/*   Updated: 2026/09/23 13:16:56 by marouan          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -107,6 +107,7 @@ public class SecurityConfig {
 		configuration.setAllowedOrigins(allowedOrigins);
 		configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
 		configuration.setAllowedHeaders(List.of("*"));
+		configuration.setExposedHeaders(List.of("Retry-After"));
 		configuration.setAllowCredentials(true);
 
 		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
@@ -143,6 +144,26 @@ public class SecurityConfig {
                     HttpHeaders.AUTHORIZATION,
                     "Bearer " + token
                 )
+                .build();
+    }
+
+	@Bean
+    RestClient YtsRestClient(
+            RestClient.Builder builder,
+            @Value("${yts.base-url}") String baseUrl
+    ) {
+        return builder
+                .baseUrl(baseUrl)
+                .build();
+    }
+
+	@Bean
+    RestClient PirateBayRestClient(
+            RestClient.Builder builder,
+            @Value("${piratebay.base-url}") String baseUrl
+    ) {
+        return builder
+                .baseUrl(baseUrl)
                 .build();
     }
 }
