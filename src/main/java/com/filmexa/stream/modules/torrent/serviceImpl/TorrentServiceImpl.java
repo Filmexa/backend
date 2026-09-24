@@ -17,8 +17,12 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Optional;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 
 import com.filmexa.stream.modules.torrent.client.TorrentClient;
 import com.filmexa.stream.modules.torrent.service.TorrentService;
@@ -27,8 +31,29 @@ import com.filmexa.stream.modules.torrent.dto.TorrentResultDto;
 @Service
 public class TorrentServiceImpl implements TorrentService{
 
+    /**
+     * The sources give us a bare info hash. A magnet built from the hash alone
+     * leaves the client with no way to find peers except DHT, which is slow to
+     * bootstrap and blocked on some networks, so we attach the open trackers
+     * these torrents are announced on.
+     */
+    private static final List<String> DEFAULT_TRACKERS = List.of(
+        "udp://tracker.opentrackr.org:1337/announce",
+        "udp://open.demonii.com:1337/announce",
+        "udp://open.stealth.si:80/announce",
+        "udp://tracker.torrent.eu.org:451/announce",
+        "udp://explodie.org:6969/announce",
+        "udp://tracker.leechers-paradise.org:6969/announce",
+        "udp://tracker.dler.org:6969/announce",
+        "udp://tracker.bittor.pw:1337/announce",
+        "udp://tracker-udp.gbitt.info:80/announce"
+    );
+
     private final TorrentClient ytsTorrentClient;
     private final TorrentClient pirateBayTorrentClient;
+
+    @Value("${app.torrent.trackers:}")
+    private List<String> configuredTrackers = List.of();
 
     public TorrentServiceImpl(  @Qualifier("ytsClient") TorrentClient yts,
         @Qualifier("pirateBay") TorrentClient pirateBay
@@ -51,10 +76,52 @@ public class TorrentServiceImpl implements TorrentService{
         
         Optional<TorrentResultDto> selectedTorrent = this.select( torrentMovieData );
         selectedTorrent.ifPresent(torrent -> {
-            torrent.setMagnet( "magnet:?xt=urn:btih:" + torrent.getMagnet());
+            torrent.setMagnet( buildMagnet( torrent.getMagnet(), torrent.getReleaseName() ));
         });
         return selectedTorrent;
     };
+
+    private String buildMagnet( String infoHash, String displayName ) {
+
+        StringBuilder magnet = new StringBuilder("magnet:?xt=urn:btih:").append(infoHash);
+
+        String safeName = sanitizeDisplayName(displayName);
+        if (!safeName.isBlank()) {
+            magnet.append("&dn=").append(encode(safeName));
+        }
+
+        List<String> trackers = configuredTrackers.isEmpty() ? DEFAULT_TRACKERS : configuredTrackers;
+        for (String tracker : trackers) {
+            magnet.append("&tr=").append(encode(tracker));
+        }
+
+        return magnet.toString();
+    }
+
+    /**
+     * Form encoding writes a space as '+', but the client reads the magnet back
+     * through java.net.URI, which leaves '+' alone - so spaces have to go over
+     * as %20 or they survive into the parsed name.
+     */
+    private String encode( String value ) {
+
+        return URLEncoder.encode(value, StandardCharsets.UTF_8).replace("+", "%20");
+    }
+
+    /**
+     * bt 1.10 parses a magnet off URI.getSchemeSpecificPart(), which is already
+     * percent-decoded, and only then splits it on '&' and '='. A display name
+     * containing either character therefore splits into a fragment the parser
+     * cannot read, and it dies with an ArrayIndexOutOfBoundsException - encoding
+     * the name correctly does not help. So we drop those two characters.
+     */
+    private String sanitizeDisplayName( String displayName ) {
+
+        if (displayName == null) {
+            return "";
+        }
+        return displayName.replace('&', ' ').replace('=', ' ').trim();
+    }
 
     private Optional<TorrentResultDto> select( List<TorrentResultDto> torrents) {
         

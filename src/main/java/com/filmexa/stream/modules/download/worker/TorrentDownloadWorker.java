@@ -8,6 +8,7 @@ import bt.Bt;
 import bt.data.Storage;
 import bt.data.file.FileSystemStorage;
 import bt.runtime.BtClient;
+import bt.runtime.BtRuntime;
 import lombok.extern.slf4j.Slf4j;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -31,8 +32,11 @@ public class TorrentDownloadWorker {
     private final Map<Long, BtClient> activeClients = new ConcurrentHashMap<>(); 
     private final Map<Long, DownloadProgressDto> progressCache = new ConcurrentHashMap<>();
 
-    public TorrentDownloadWorker(MovieDownloadRepository movieDownloadRepository) {
+    private final BtRuntime btRuntime;
+
+    public TorrentDownloadWorker(MovieDownloadRepository movieDownloadRepository, BtRuntime btRuntime) {
         this.movieDownloadRepository = movieDownloadRepository;
+        this.btRuntime = btRuntime;
     }
 
     public DownloadProgressDto getProgress(Long movieId) {
@@ -68,11 +72,10 @@ public class TorrentDownloadWorker {
             // --- STEP 2: Configure & Build BtClient ---
             Storage storage = new FileSystemStorage(movieDir);
             SequentialPieceSelector selector = new SequentialPieceSelector(isMp4);
-            BtClient client = Bt.client()
+            BtClient client = Bt.client(btRuntime)
                 .storage(storage)
                 .magnet(magnetUrl)
                 .selector(selector)
-                .autoLoadModules()
                 .stopWhenDownloaded()
                 .build();
             

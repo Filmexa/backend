@@ -18,6 +18,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.client.RestClient;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.web.util.HtmlUtils;
 
 import com.filmexa.stream.modules.torrent.dto.TorrentResultDto;
 import com.filmexa.stream.modules.torrent.dto.piratebay.PirateBayResponseDto;
@@ -44,6 +45,9 @@ public class PirateBayClient implements TorrentClient{
         
         return response.stream()
             .takeWhile(torrent -> torrent.getSeeders() > 1 )
+            // The API hands back HTML-escaped names ("Minions &amp; Monsters"), which
+            // would otherwise reach both the subtitle matcher and the magnet's dn.
+            .peek( torrent -> torrent.setName( HtmlUtils.htmlUnescape( torrent.getName() ) ) )
             .map( torrent -> new TorrentResultDto(
                 torrent.getId(),
                 imdbId,
