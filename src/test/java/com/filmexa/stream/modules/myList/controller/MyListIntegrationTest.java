@@ -154,9 +154,10 @@ class MyListIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void myList_shouldReturnForbidden_whenNotAuthenticated() throws Exception {
+    void myList_shouldReturnUnauthorized_whenTokenIsInvalid() throws Exception {
         mockMvc.perform(get("/api/my-list")
                         .header("Authorization", "Bearer " + "not valide token"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401));
     }
 }

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   SecurityConfig.java                                :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
+/*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/08 18:34:10 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/09/23 16:41:33 by kchaouki         ###   ########.fr       */
+/*   Updated: 2026/09/23 13:16:56 by marouan          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,6 +33,8 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import com.filmexa.stream.security.filter.JwtAuthenticationFilter;
+import com.filmexa.stream.security.handler.RestAccessDeniedHandler;
+import com.filmexa.stream.security.handler.RestAuthenticationEntryPoint;
 
 import lombok.RequiredArgsConstructor;
 
@@ -70,6 +72,8 @@ public class SecurityConfig {
 
 	private final UserDetailsService userDetailsService;
 	private final JwtAuthenticationFilter jwtAuthenticationFilter;
+	private final RestAuthenticationEntryPoint restAuthenticationEntryPoint;
+	private final RestAccessDeniedHandler restAccessDeniedHandler;
 
 	@Value("${app.cors.allowed-origins}")
 	private List<String> allowedOrigins;
@@ -86,6 +90,9 @@ public class SecurityConfig {
 						.requestMatchers(AUTH_WHITELIST).permitAll()
 						.requestMatchers("/error").permitAll()
 						.anyRequest().authenticated())
+				.exceptionHandling(ex -> ex
+						.authenticationEntryPoint(restAuthenticationEntryPoint)
+						.accessDeniedHandler(restAccessDeniedHandler))
 				.cors(cors -> cors.configurationSource(corsConfigurationSource()))
 				.csrf(csrf -> csrf.disable())
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -137,6 +144,26 @@ public class SecurityConfig {
                     HttpHeaders.AUTHORIZATION,
                     "Bearer " + token
                 )
+                .build();
+    }
+
+	@Bean
+    RestClient YtsRestClient(
+            RestClient.Builder builder,
+            @Value("${yts.base-url}") String baseUrl
+    ) {
+        return builder
+                .baseUrl(baseUrl)
+                .build();
+    }
+
+	@Bean
+    RestClient PirateBayRestClient(
+            RestClient.Builder builder,
+            @Value("${piratebay.base-url}") String baseUrl
+    ) {
+        return builder
+                .baseUrl(baseUrl)
                 .build();
     }
 }

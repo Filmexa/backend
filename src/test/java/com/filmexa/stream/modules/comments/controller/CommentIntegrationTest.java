@@ -125,13 +125,14 @@ class CommentIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void createComment_shouldReturnForbidden_whenNotAuthenticated() throws Exception {
+    void createComment_shouldReturnUnauthorized_whenTokenIsInvalid() throws Exception {
         mockMvc.perform(post("/api/movie/101/comments")
                         .header("Authorization", "Bearer " + "not valide token")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"content":"Nope"}
                                 """))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401));
     }
 }

@@ -78,7 +78,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         SecurityContextHolder.getContext().setAuthentication(authToken);
                     }
                 }
-            } catch (JwtException | UsernameNotFoundException e) {
+            } catch (JwtException | IllegalArgumentException | UsernameNotFoundException e) {
+                // IllegalArgumentException covers a blank token ("Bearer " with nothing
+                // after it); leaving the context empty lets the entry point answer 401.
                 SecurityContextHolder.clearContext();
             }
 

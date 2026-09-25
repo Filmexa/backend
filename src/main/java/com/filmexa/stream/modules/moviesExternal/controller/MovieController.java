@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   MovieController.java                               :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: maddou <maddou@student.42.fr>              +#+  +:+       +#+        */
+/*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/13 10:27:27 by maddou            #+#    #+#             */
-/*   Updated: 2026/09/18 02:33:08 by maddou           ###   ########.fr       */
+/*   Updated: 2026/09/25 16:10:27 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,6 +32,7 @@ import com.filmexa.stream.modules.moviesExternal.dto.response.MovieResponse;
 import com.filmexa.stream.modules.moviesExternal.dto.response.MovieDetailsResponse;
 import com.filmexa.stream.modules.moviesExternal.dto.response.MoviePageResponse;
 
+
 import jakarta.validation.Valid;
 
 import java.util.List;
@@ -47,9 +48,13 @@ import java.util.Map;
 public class MovieController {
 
     private final MovieService movieService;
-
-    public MovieController( MovieService movieService ) {
+    
+    // # you must deleted
+    // private final TorrentService torrentService;
+    
+    public MovieController( MovieService movieService/* , TorrentService torrentService*/) {
         this.movieService = movieService;
+        // this.torrentService = torrentService;
     }
 
     @GetMapping("/trending/week")
@@ -62,6 +67,12 @@ public class MovieController {
         return this.movieService.buildHomeMovies( query.getLanguage() );
     }
 
+    // @GetMapping("/test")
+    // public  Optional<TorrentResultDto> getHomeData( ) {
+    //     return this.torrentService.resolve( "tt1375666" );
+    //     // return ;
+    // }
+    
     @GetMapping("/genre/{id}")
     public MoviePageResponse getMovieByGenre( @PathVariable 
         @Positive(message = "ID must be greater than 0") 
