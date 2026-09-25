@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   MovieServiceImpl.java                              :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
+/*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/14 12:33:45 by maddou            #+#    #+#             */
-/*   Updated: 2026/09/23 11:35:57 by marouan          ###   ########.fr       */
+/*   Updated: 2026/09/25 16:10:33 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -220,7 +220,7 @@ public class MovieServiceImpl implements MovieService {
         // convert to application actors and limited to 10
         List< ActorResponse > actors =   movieDetails.getCredits().getCast()
             .stream()
-            .limit(10)
+            .limit(20)
             .map( movie -> new ActorResponse(
                 movie.getId(),
                 movie.getName(),
