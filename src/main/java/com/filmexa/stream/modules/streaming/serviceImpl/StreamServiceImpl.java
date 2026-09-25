@@ -247,7 +247,8 @@ public class StreamServiceImpl implements StreamService {
     @Override
     public String mediaPlaylist(Long movieId, int height, String token) {
         MediaInfo info = mediaInfo(movieId);
-        return playlistBuilder.media(info, resolveRung(info, height), token);
+        resolveRung(info, height);
+        return playlistBuilder.media(info, token);
     }
 
     @Override

@@ -85,6 +85,33 @@ jobs:
           TMDB_ACCESS_TOKEN: ${{ secrets.TMDB_ACCESS_TOKEN }}
           TMDB_BASE_URL: ${{ secrets.TMDB_BASE_URL }}
           TMDB_IMAGE_BASE_URL: ${{ secrets.TMDB_IMAGE_BASE_URL }}
+          SECURITY_VERIFICATION_EXPIRATION_MINUTES: ${{ secrets.SECURITY_VERIFICATION_EXPIRATION_MINUTES }}
+          YTS_BASE_URL: ${{ secrets.YTS_BASE_URL }}
+          PIRATEBAY_BASE_URL: ${{ secrets.PIRATEBAY_BASE_URL }}
+          SUBDL_BAZE_URL: ${{ secrets.SUBDL_BAZE_URL }}
+          FFMPEG_PATH: ${{ secrets.FFMPEG_PATH }}
+          FFPROBE_PATH: ${{ secrets.FFPROBE_PATH }}
+          STREAM_SEGMENT_SECONDS: ${ secrets.STREAM_SEGMENT_SECONDS }
+          STREAM_PRESET: ${{ secrets.STREAM_PRESET }}
+          STREAM_MAX_TRANSCODES: ${{ secrets.STREAM_MAX_TRANSCODES }}
+          STREAM_TRANSCODE_TIMEOUT: ${{ secrets.STREAM_TRANSCODE_TIMEOUT }}
+          STREAM_PROBE_TIMEOUT: ${{ secrets.STREAM_PROBE_TIMEOUT }}
+          STREAM_READAHEAD_SECONDS: ${{ secrets.STREAM_READAHEAD_SECONDS }}
+          STREAM_TOKEN_SECRET: ${{ secrets.STREAM_TOKEN_SECRET }}
+          STREAM_TOKEN_TTL_MINUTES: ${{ secrets.STREAM_TOKEN_TTL_MINUTES }}
+          CLEANUP_RETENTION_DAYS: ${{ secrets.CLEANUP_RETENTION_DAYS }}
+          CLEANUP_CRON: ${{ secrets.CLEANUP_CRON }}
+          JPA_SHOW_SQL: ${{ secrets.JPA_SHOW_SQL }}
+          TORRENT_ACCEPTOR_PORT: ${{ secrets.TORRENT_ACCEPTOR_PORT }}
+          TORRENT_DHT_PORT: ${{ secrets.TORRENT_DHT_PORT }}
+          TORRENT_TRACKERS: ${{ secrets.TORRENT_TRACKERS }}
+          TORRENT_MAX_CONCURRENT_DOWNLOADS: ${{ secrets.TORRENT_MAX_CONCURRENT_DOWNLOADS }}
+          TORRENT_DOWNLOAD_QUEUE_CAPACITY: ${{ secrets.TORRENT_DOWNLOAD_QUEUE_CAPACITY }}
+          TORRENT_MAX_PEER_CONNECTIONS_PER_DOWNLOAD: ${{ secrets.TORRENT_MAX_PEER_CONNECTIONS_PER_DOWNLOAD }}
+          TORRENT_HASHING_THREADS: ${{ secrets.TORRENT_HASHING_THREADS }}
+          BT_PEER_LOG_LEVEL: ${{ secrets.BT_PEER_LOG_LEVEL }}
+          BT_NET_LOG_LEVEL: ${{ secrets.BT_NET_LOG_LEVEL }}
+
   build:
     name: Build and Push Docker Image
     needs: test
@@ -191,7 +218,34 @@ jobs:
             TMDB_ACCESS_TOKEN=${{ secrets.TMDB_ACCESS_TOKEN }}
             TMDB_BASE_URL=${{ secrets.TMDB_BASE_URL }}
             TMDB_IMAGE_BASE_URL=${{ secrets.TMDB_IMAGE_BASE_URL }}
+            SECURITY_VERIFICATION_EXPIRATION_MINUTES=${{ secrets.SECURITY_VERIFICATION_EXPIRATION_MINUTES }}
+            YTS_BASE_URL=${{ secrets.YTS_BASE_URL }}
+            PIRATEBAY_BASE_URL=${{ secrets.PIRATEBAY_BASE_URL }}
+            SUBDL_BAZE_URL=${{ secrets.SUBDL_BAZE_URL }}
+            FFMPEG_PATH=${{ secrets.FFMPEG_PATH }}
+            FFPROBE_PATH=${{ secrets.FFPROBE_PATH }}
+            STREAM_SEGMENT_SECONDS=${ secrets.STREAM_SEGMENT_SECONDS }
+            STREAM_PRESET=${{ secrets.STREAM_PRESET }}
+            STREAM_MAX_TRANSCODES=${{ secrets.STREAM_MAX_TRANSCODES }}
+            STREAM_TRANSCODE_TIMEOUT=${{ secrets.STREAM_TRANSCODE_TIMEOUT }}
+            STREAM_PROBE_TIMEOUT=${{ secrets.STREAM_PROBE_TIMEOUT }}
+            STREAM_READAHEAD_SECONDS=${{ secrets.STREAM_READAHEAD_SECONDS }}
+            STREAM_TOKEN_SECRET=${{ secrets.STREAM_TOKEN_SECRET }}
+            STREAM_TOKEN_TTL_MINUTES=${{ secrets.STREAM_TOKEN_TTL_MINUTES }}
+            CLEANUP_RETENTION_DAYS=${{ secrets.CLEANUP_RETENTION_DAYS }}
+            CLEANUP_CRON=${{ secrets.CLEANUP_CRON }}
+            JPA_SHOW_SQL=${{ secrets.JPA_SHOW_SQL }}
+            TORRENT_ACCEPTOR_PORT=${{ secrets.TORRENT_ACCEPTOR_PORT }}
+            TORRENT_DHT_PORT=${{ secrets.TORRENT_DHT_PORT }}
+            TORRENT_TRACKERS=${{ secrets.TORRENT_TRACKERS }}
+            TORRENT_MAX_CONCURRENT_DOWNLOADS=${{ secrets.TORRENT_MAX_CONCURRENT_DOWNLOADS }}
+            TORRENT_DOWNLOAD_QUEUE_CAPACITY=${{ secrets.TORRENT_DOWNLOAD_QUEUE_CAPACITY }}
+            TORRENT_MAX_PEER_CONNECTIONS_PER_DOWNLOAD=${{ secrets.TORRENT_MAX_PEER_CONNECTIONS_PER_DOWNLOAD }}
+            TORRENT_HASHING_THREADS=${{ secrets.TORRENT_HASHING_THREADS }}
+            BT_PEER_LOG_LEVEL=${{ secrets.BT_PEER_LOG_LEVEL }}
+            BT_NET_LOG_LEVEL=${{ secrets.BT_NET_LOG_LEVEL }}
             EOF
+            
             docker compose pull
             docker compose up -d --remove-orphans
             docker image prune -f 

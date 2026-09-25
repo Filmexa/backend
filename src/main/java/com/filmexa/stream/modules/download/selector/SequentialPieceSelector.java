@@ -27,10 +27,6 @@ public class SequentialPieceSelector implements PieceSelector {
         this.isMp4 = isMp4;
     }
 
-    public void setMp4(boolean isMp4) {
-        this.isMp4 = isMp4;
-    }
-
     @Override
     public void initSelector(int totalPieces) {
         this.totalPieces = totalPieces;
