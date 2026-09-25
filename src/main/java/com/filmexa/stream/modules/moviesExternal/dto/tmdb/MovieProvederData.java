@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   MovieProvederData.java                             :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
+/*   By: baani <baani@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/17 23:07:04 by marouan           #+#    #+#             */
-/*   Updated: 2026/09/22 15:22:12 by marouan          ###   ########.fr       */
+/*   Updated: 2026/09/25 15:52:31 by baani            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -36,5 +36,6 @@ public class MovieProvederData {
     String      overview; 
     String      release_date;
     // Double      vote_average;
+    boolean     adult;
     MovieCreditsProviderData    credits;
 }
