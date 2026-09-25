@@ -91,7 +91,7 @@ jobs:
           SUBDL_BAZE_URL: ${{ secrets.SUBDL_BAZE_URL }}
           FFMPEG_PATH: ${{ secrets.FFMPEG_PATH }}
           FFPROBE_PATH: ${{ secrets.FFPROBE_PATH }}
-          STREAM_SEGMENT_SECONDS: ${ secrets.STREAM_SEGMENT_SECONDS }
+          STREAM_SEGMENT_SECONDS: ${{ secrets.STREAM_SEGMENT_SECONDS }}
           STREAM_PRESET: ${{ secrets.STREAM_PRESET }}
           STREAM_MAX_TRANSCODES: ${{ secrets.STREAM_MAX_TRANSCODES }}
           STREAM_TRANSCODE_TIMEOUT: ${{ secrets.STREAM_TRANSCODE_TIMEOUT }}
@@ -224,7 +224,7 @@ jobs:
             SUBDL_BAZE_URL=${{ secrets.SUBDL_BAZE_URL }}
             FFMPEG_PATH=${{ secrets.FFMPEG_PATH }}
             FFPROBE_PATH=${{ secrets.FFPROBE_PATH }}
-            STREAM_SEGMENT_SECONDS=${ secrets.STREAM_SEGMENT_SECONDS }
+            STREAM_SEGMENT_SECONDS=${{ secrets.STREAM_SEGMENT_SECONDS }}
             STREAM_PRESET=${{ secrets.STREAM_PRESET }}
             STREAM_MAX_TRANSCODES=${{ secrets.STREAM_MAX_TRANSCODES }}
             STREAM_TRANSCODE_TIMEOUT=${{ secrets.STREAM_TRANSCODE_TIMEOUT }}
