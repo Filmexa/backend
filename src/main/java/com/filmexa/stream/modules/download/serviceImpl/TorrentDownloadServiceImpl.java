@@ -76,6 +76,16 @@ public class TorrentDownloadServiceImpl implements TorrentDownloadService {
     }
 
     @Override
+    public void seek(Long movieId, double fraction) {
+        torrentDownloadWorker.seek(movieId, fraction);
+    }
+
+    @Override
+    public Optional<Boolean> isRangeDownloaded(Long movieId, double fromFraction, double toFraction) {
+        return torrentDownloadWorker.isRangeDownloaded(movieId, fromFraction, toFraction);
+    }
+
+    @Override
     public boolean isActive(Long movieId) {
         return torrentDownloadWorker.isActive(movieId);
     }

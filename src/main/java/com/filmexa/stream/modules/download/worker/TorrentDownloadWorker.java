@@ -8,8 +8,12 @@ import com.filmexa.stream.modules.download.selector.SequentialPieceSelector;
 import bt.Bt;
 import bt.data.Storage;
 import bt.data.file.FileSystemStorage;
+import bt.data.Bitfield;
 import bt.magnet.MagnetUriParser;
 import bt.metainfo.TorrentId;
+import bt.runtime.BtRuntime;
+import bt.torrent.TorrentDescriptor;
+import bt.torrent.TorrentRegistry;
 import bt.peer.IPeerRegistry;
 import bt.runtime.BtClient;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +28,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import com.filmexa.stream.modules.download.enums.DownloadStatus;
 import java.time.LocalDateTime;
@@ -38,6 +43,9 @@ public class TorrentDownloadWorker {
     /** How often we ask the DHT for peers again while a download is getting nowhere. */
     private static final long PEER_TRIGGER_INTERVAL_MS = 5_000;
 
+    /** How often the byte counters are written to the database while downloading. */
+    private static final long PROGRESS_PERSIST_INTERVAL_MS = 10_000;
+
     private final MovieDownloadRepository movieDownloadRepository;
     @Value("${app.video-storage-path:./data/movies}")
     private String videoStoragePath; 
@@ -51,6 +59,13 @@ public class TorrentDownloadWorker {
      * again and again, and those duplicates take the slots other movies are waiting for.
      */
     private final Set<Long> submitted = ConcurrentHashMap.newKeySet();
+
+    /** Each running download's selector, so playback can move its playhead. */
+    private final Map<Long, SequentialPieceSelector> selectors = new ConcurrentHashMap<>();
+
+    /** Per-download handles for answering "is this part of the film on disk?". */
+    private final Map<Long, BtRuntime> runtimes = new ConcurrentHashMap<>();
+    private final Map<Long, TorrentId> torrentIds = new ConcurrentHashMap<>();
 
     private final TorrentRuntimePool runtimePool;
     private final Executor torrentExecutor;
@@ -72,11 +87,85 @@ public class TorrentDownloadWorker {
         return submitted.contains(movieId) || activeClients.containsKey(movieId);
     }
 
+    /**
+     * Moves a running download to the part of the film being watched, so seeking forward
+     * does not wait for everything in between.
+     *
+     * @param fraction how far into the file, 0.0 to 1.0
+     * @return true if a download was there to redirect
+     */
+    public boolean seek(Long movieId, double fraction) {
+        SequentialPieceSelector selector = selectors.get(movieId);
+        if (selector == null) {
+            return false;
+        }
+
+        int before = selector.getPlayheadPiece();
+        int after = selector.seekToFraction(fraction);
+        if (before != after) {
+            log.info("Movie {}: viewer seeked to {}% - downloading from piece {} now",
+                    movieId, String.format("%.1f", fraction * 100), after);
+        }
+        return true;
+    }
+
+    /**
+     * Whether every piece covering a stretch of the file is already on disk.
+     *
+     * <p>Once a seek has moved the playhead the downloaded data is no longer one run from
+     * the start, so "bytes downloaded" says nothing about whether a particular minute of
+     * the film can be played. The torrent's own piece bitfield does.
+     *
+     * @return the answer, or empty when no running download can give one
+     */
+    public Optional<Boolean> isRangeDownloaded(Long movieId, double fromFraction, double toFraction) {
+        BtRuntime runtime = runtimes.get(movieId);
+        TorrentId torrentId = torrentIds.get(movieId);
+        if (runtime == null || torrentId == null) {
+            return Optional.empty();
+        }
+
+        try {
+            Optional<TorrentDescriptor> descriptor =
+                    runtime.service(TorrentRegistry.class).getDescriptor(torrentId);
+            if (descriptor.isEmpty() || descriptor.get().getDataDescriptor() == null) {
+                // Still fetching the metadata: there are no pieces to ask about yet.
+                return Optional.empty();
+            }
+
+            Bitfield bitfield = descriptor.get().getDataDescriptor().getBitfield();
+            int total = bitfield.getPiecesTotal();
+            if (total <= 0) {
+                return Optional.empty();
+            }
+
+            int first = pieceAt(fromFraction, total);
+            int last = pieceAt(toFraction, total);
+            for (int piece = first; piece <= last; piece++) {
+                if (!bitfield.isComplete(piece)) {
+                    return Optional.of(false);
+                }
+            }
+            return Optional.of(true);
+        } catch (Exception e) {
+            log.debug("Could not read the piece bitfield for movie {}: {}", movieId, e.getMessage());
+            return Optional.empty();
+        }
+    }
+
+    private int pieceAt(double fraction, int totalPieces) {
+        double clamped = Math.min(1.0, Math.max(0.0, fraction));
+        return Math.min(totalPieces - 1, (int) (clamped * totalPieces));
+    }
+
     public void stopDownload(Long movieId) {
         BtClient client = activeClients.remove(movieId);
         if (client != null) {   
             client.stop();
             progressCache.remove(movieId);
+            selectors.remove(movieId);
+            runtimes.remove(movieId);
+            torrentIds.remove(movieId);
             log.info("Stopped download for movie with ID: {}", movieId);
             movieDownloadRepository.findByMovieId(movieId).ifPresent(download -> {
                 download.setStatus(DownloadStatus.PAUSED);
@@ -129,6 +218,7 @@ public class TorrentDownloadWorker {
             // --- STEP 2: Configure & Build BtClient ---
             Storage storage = new FileSystemStorage(movieDir);
             SequentialPieceSelector selector = new SequentialPieceSelector(isMp4);
+            selectors.put(movieId, selector);
             BtClient client = Bt.client(lease.runtime())
                 .storage(storage)
                 .magnet(magnetUrl)
@@ -155,7 +245,12 @@ public class TorrentDownloadWorker {
                 // has gone quiet.
                 IPeerRegistry peerRegistry = lease.runtime().service(IPeerRegistry.class);
                 TorrentId torrentId = torrentIdOf(magnetUrl);
+                runtimes.put(movieId, lease.runtime());
+                if (torrentId != null) {
+                    torrentIds.put(movieId, torrentId);
+                }
                 AtomicLong lastPeerTrigger = new AtomicLong(0);
+                AtomicLong lastProgressPersist = new AtomicLong(System.currentTimeMillis());
 
                 CompletableFuture<?> future = client.startAsync(sessionState -> {
                     Long downloaded = sessionState.getDownloaded();
@@ -220,6 +315,22 @@ public class TorrentDownloadWorker {
                         currentStatus = DownloadStatus.DOWNLOADING;
                     }
 
+                    // 4b. The byte counters only lived in memory, so every answer served
+                    // from the database after a restart claimed 0 bytes downloaded - and
+                    // the streaming gate works out how much is playable from exactly those
+                    // two numbers.
+                    if (metadataKnown
+                            && System.currentTimeMillis() - lastProgressPersist.get() >= PROGRESS_PERSIST_INTERVAL_MS) {
+                        lastProgressPersist.set(System.currentTimeMillis());
+                        Long persistedDownloaded = downloaded;
+                        Long persistedTotal = total;
+                        movieDownloadRepository.findByMovieId(movieId).ifPresent(download -> {
+                            download.setDownloadedBytes(persistedDownloaded);
+                            download.setTotalBytes(persistedTotal);
+                            movieDownloadRepository.save(download);
+                        });
+                    }
+
                     // 5. Put in-memory snapshot for the frontend
                     progressCache.put(movieId, DownloadProgressDto.builder()
                         .movieId(movieId)
@@ -249,9 +360,16 @@ public class TorrentDownloadWorker {
 
             // Download completed 100%!
             log.info("Download completed successfully for movie: {}", movieId);
+            DownloadProgressDto finalProgress = progressCache.get(movieId);
             movieDownloadRepository.findByMovieId(movieId).ifPresent(download -> {
                 download.setStatus(DownloadStatus.COMPLETED);
                 download.setCompletedAt(LocalDateTime.now());
+                // A COMPLETED row whose counters say otherwise is what makes a partly
+                // downloaded film look playable from end to end.
+                if (finalProgress != null && finalProgress.getTotalBytes() > 0) {
+                    download.setTotalBytes(finalProgress.getTotalBytes());
+                    download.setDownloadedBytes(finalProgress.getTotalBytes());
+                }
                 movieDownloadRepository.save(download);
             });
         } catch (Exception e) {
@@ -266,6 +384,9 @@ public class TorrentDownloadWorker {
             // Frees the runtime's ports and the claim, so both can serve a retry or
             // another movie - the thread itself is already back in the pool.
             runtimePool.release(lease);
+            selectors.remove(movieId);
+            runtimes.remove(movieId);
+            torrentIds.remove(movieId);
             submitted.remove(movieId);
         }
     }

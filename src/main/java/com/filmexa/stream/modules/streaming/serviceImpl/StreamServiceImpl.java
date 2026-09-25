@@ -59,6 +59,12 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class StreamServiceImpl implements StreamService {
 
+    /**
+     * How much of a torrent's total has to be on disk before a COMPLETED download is
+     * taken at its word. The video file is always a little smaller than the torrent.
+     */
+    private static final double COMPLETE_FILE_RATIO = 0.95;
+
     private static final Set<String> VIDEO_EXTENSIONS =
             Set.of("mp4", "mkv", "avi", "mov", "m4v", "webm", "wmv", "flv", "mpg", "mpeg", "ts");
 
@@ -116,6 +122,7 @@ public class StreamServiceImpl implements StreamService {
                 .token(token)
                 .expiresInSeconds(streamTokenService.getTtlSeconds())
                 .durationSeconds(info.durationSeconds())
+                .playableSeconds(playableSeconds(movieId, info))
                 .variants(variantsFor(movieId, info, token))
                 .subtitles(subtitlesFor(movieId, info, token, viewer))
                 .build();
@@ -131,9 +138,16 @@ public class StreamServiceImpl implements StreamService {
         if (existing.isPresent()) {
             DownloadStatus status = existing.get().getStatus();
 
-            // Already on disk - nothing to do.
-            if (status == DownloadStatus.COMPLETED) {
+            // Already on disk - nothing to do, as long as it really is all there. A
+            // COMPLETED row over a part-downloaded file is a dead end otherwise: this
+            // early return is what stops the download ever being picked up again.
+            if (status == DownloadStatus.COMPLETED && isFileComplete(existing.get())) {
                 return existing.get();
+            }
+
+            if (status == DownloadStatus.COMPLETED) {
+                log.warn("Movie {} is marked COMPLETED but the file on disk is short,"
+                        + " downloading the rest", movieId);
             }
 
             // Anything else needs a live torrent client. A row can say DOWNLOADING while
@@ -441,9 +455,32 @@ public class StreamServiceImpl implements StreamService {
     private void requireDownloaded(Long movieId, MediaInfo info, int segmentIndex) {
         double segmentEnd = (double) (segmentIndex + 1) * properties.getSegmentSeconds();
         double required = Math.min(segmentEnd + properties.getReadaheadSeconds(), info.durationSeconds());
+        double segmentStart = (double) segmentIndex * properties.getSegmentSeconds();
+
+        // Ask the torrent which pieces it actually holds. After a seek the data is no
+        // longer one run from the start, so a "bytes downloaded" estimate would keep
+        // refusing the very segments the seek just fetched.
+        if (info.durationSeconds() > 0) {
+            Optional<Boolean> downloaded = torrentDownloadService.isRangeDownloaded(movieId,
+                    segmentStart / info.durationSeconds(), required / info.durationSeconds());
+
+            if (downloaded.isPresent()) {
+                if (downloaded.get()) {
+                    return;
+                }
+                requestSeek(movieId, info, segmentStart);
+                log.debug("Segment {} of movie {} is not on disk yet", segmentIndex, movieId);
+                throw new StreamNotReadyException(
+                        "Segment " + segmentIndex + " has not been downloaded yet", 5);
+            }
+        }
+
+        // Nothing running to ask - fall back to how much of the file is on disk, which is
+        // a prefix as long as no seek has happened.
         double playable = playableSeconds(movieId, info);
 
         if (playable + 0.001 < required) {
+            requestSeek(movieId, info, segmentStart);
             log.debug("Segment {} of movie {} needs {}s downloaded, have {}s",
                     segmentIndex, movieId, (long) required, (long) playable);
             throw new StreamNotReadyException(
@@ -452,18 +489,51 @@ public class StreamServiceImpl implements StreamService {
     }
 
     /** How many seconds from the start of the movie are estimated to be on disk. */
+    /**
+     * Moves the download to what the viewer is trying to watch, rather than making them
+     * wait for everything in between - ten minutes of film is a few hundred MB, not the
+     * remaining hour of the torrent. Time maps onto bytes only roughly for variable
+     * bitrate video, so aim a segment early and let the sequential order carry on.
+     */
+    private void requestSeek(Long movieId, MediaInfo info, double segmentStart) {
+        if (info.durationSeconds() <= 0) {
+            return;
+        }
+        double target = Math.max(0, segmentStart - properties.getSegmentSeconds());
+        torrentDownloadService.seek(movieId, target / info.durationSeconds());
+    }
+
     private double playableSeconds(Long movieId, MediaInfo info) {
         DownloadProgressDto progress = torrentDownloadService.getProgress(movieId);
 
         // No download record at all means the file is simply sitting on disk.
-        if (progress == null || progress.getStatus() == DownloadStatus.COMPLETED) {
+        if (progress == null) {
             return info.durationSeconds();
         }
-        if (progress.getTotalBytes() <= 0) {
-            return 0;
+
+        long totalBytes = progress.getTotalBytes();
+
+        // The size of the file is the one number that cannot go stale: pieces arrive in
+        // order, so the file grows as they land. A status of COMPLETED on a row whose
+        // download really stopped a third of the way through is what let the player ask
+        // for a segment two hours past the last byte on disk and 503 forever.
+        long available = Math.max(progress.getDownloadedBytes(), sizeOf(info.file()));
+
+        if (totalBytes <= 0) {
+            return progress.getStatus() == DownloadStatus.COMPLETED ? info.durationSeconds() : 0;
         }
 
-        double ratio = (double) progress.getDownloadedBytes() / progress.getTotalBytes();
+        if (progress.getStatus() == DownloadStatus.COMPLETED) {
+            // The torrent's total covers every file in it - samples, nfo - so the video
+            // alone lands a little short of it even when the download really did finish.
+            if (available >= totalBytes * COMPLETE_FILE_RATIO) {
+                return info.durationSeconds();
+            }
+            log.warn("Movie {} is marked COMPLETED but only {} of {} bytes are on disk;"
+                    + " serving what is actually there", movieId, available, totalBytes);
+        }
+
+        double ratio = (double) available / totalBytes;
         return Math.min(1.0, ratio) * info.durationSeconds();
     }
 
@@ -471,6 +541,19 @@ public class StreamServiceImpl implements StreamService {
      * Finds the movie file. The download worker records its relative path once the torrent
      * metadata resolves; otherwise we fall back to the largest video file in the folder.
      */
+    /** Whether the video file on disk accounts for the torrent this row recorded. */
+    private boolean isFileComplete(MovieDownload download) {
+        long totalBytes = download.getTotalBytes();
+        if (totalBytes <= 0) {
+            // Nothing to compare against - rows written before the counters were
+            // persisted have no total, so the file has to be taken as it is.
+            return true;
+        }
+        return locate(download.getMovieId())
+                .map(this::sizeOf)
+                .orElse(0L) >= totalBytes * COMPLETE_FILE_RATIO;
+    }
+
     private Optional<Path> locate(Long movieId) {
         Path directory = Paths.get(videoStoragePath, movieId.toString()).toAbsolutePath();
 
