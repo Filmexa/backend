@@ -42,4 +42,6 @@ public class MovieDetailsProviderData {
 
     @JsonProperty("genre_ids")
     private List<Integer> genreIds;
+
+    private boolean adult;
 }
