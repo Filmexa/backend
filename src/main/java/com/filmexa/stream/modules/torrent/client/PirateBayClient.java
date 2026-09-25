@@ -42,7 +42,11 @@ public class PirateBayClient implements TorrentClient{
             .uri("?q={imdbId}", imdbId )
             .retrieve()
             .body( new ParameterizedTypeReference<List<PirateBayResponseDto>>() {} );
-        
+
+        if ( response == null ) {
+            return List.of();
+        }
+
         return response.stream()
             .takeWhile(torrent -> torrent.getSeeders() > 1 )
             // The API hands back HTML-escaped names ("Minions &amp; Monsters"), which

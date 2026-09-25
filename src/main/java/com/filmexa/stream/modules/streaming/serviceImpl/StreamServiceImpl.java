@@ -158,7 +158,8 @@ public class StreamServiceImpl implements StreamService {
             request.setMagnetUrl(torrent.get().getMagnet());
             return torrentDownloadService.startDownload(request);
         }
-        throw new RuntimeException("Failed to resolve torrent for movie: " + imdbId);
+        // No provider carries this film - that is a 404 for the caller, not a server fault.
+        throw new NotFoundException("No torrent available for movie " + movieId);
     }
 
     private StreamSessionDto preparing(Long movieId, MovieDownload download) {

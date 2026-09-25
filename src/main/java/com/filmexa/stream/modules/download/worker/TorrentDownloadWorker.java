@@ -3,23 +3,28 @@ package com.filmexa.stream.modules.download.worker;
 import org.springframework.stereotype.Component;
 import com.filmexa.stream.modules.download.dto.DownloadProgressDto;
 import com.filmexa.stream.modules.download.repo.MovieDownloadRepository;
+import com.filmexa.stream.modules.download.config.TorrentRuntimePool;
 import com.filmexa.stream.modules.download.selector.SequentialPieceSelector;
 import bt.Bt;
 import bt.data.Storage;
 import bt.data.file.FileSystemStorage;
+import bt.magnet.MagnetUriParser;
+import bt.metainfo.TorrentId;
+import bt.peer.IPeerRegistry;
 import bt.runtime.BtClient;
-import bt.runtime.BtRuntime;
 import lombok.extern.slf4j.Slf4j;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Async;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
+import java.util.Set;
 import com.filmexa.stream.modules.download.enums.DownloadStatus;
 import java.time.LocalDateTime;
 import bt.runtime.Config;
@@ -29,25 +34,42 @@ import java.net.InetAddress;
 @Component
 @Slf4j
 public class TorrentDownloadWorker {
+
+    /** How often we ask the DHT for peers again while a download is getting nowhere. */
+    private static final long PEER_TRIGGER_INTERVAL_MS = 5_000;
+
     private final MovieDownloadRepository movieDownloadRepository;
     @Value("${app.video-storage-path:./data/movies}")
     private String videoStoragePath; 
     private final Map<Long, BtClient> activeClients = new ConcurrentHashMap<>(); 
     private final Map<Long, DownloadProgressDto> progressCache = new ConcurrentHashMap<>();
 
-    private final BtRuntime btRuntime;
+    /**
+     * Movies already submitted to the executor, claimed before the task is handed over.
+     * A client only lands in {@link #activeClients} once its task actually runs, so
+     * without this a caller that polls (the stream session does) queues the same movie
+     * again and again, and those duplicates take the slots other movies are waiting for.
+     */
+    private final Set<Long> submitted = ConcurrentHashMap.newKeySet();
 
-    public TorrentDownloadWorker(MovieDownloadRepository movieDownloadRepository, BtRuntime btRuntime) {
+    private final TorrentRuntimePool runtimePool;
+    private final Executor torrentExecutor;
+
+    public TorrentDownloadWorker(MovieDownloadRepository movieDownloadRepository,
+            TorrentRuntimePool runtimePool,
+            @Qualifier("torrentTaskExecutor") Executor torrentExecutor) {
         this.movieDownloadRepository = movieDownloadRepository;
-        this.btRuntime = btRuntime;
+        this.runtimePool = runtimePool;
+        this.torrentExecutor = torrentExecutor;
     }
 
     public DownloadProgressDto getProgress(Long movieId) {
         return progressCache.get(movieId);
     }
 
+    /** True while the movie is queued for a thread or downloading on one. */
     public boolean isActive(Long movieId) {
-        return activeClients.containsKey(movieId);
+        return submitted.contains(movieId) || activeClients.containsKey(movieId);
     }
 
     public void stopDownload(Long movieId) {
@@ -62,10 +84,42 @@ public class TorrentDownloadWorker {
             });
         }
     }
-    @Async("torrentTaskExecutor")
-    public void startDownloadAsync(Long movieId, String magnetUrl) {
+    /**
+     * Hands the download to the torrent pool. Submitting explicitly rather than through
+     * {@code @Async} is what lets the movie be claimed *before* the task is queued, so a
+     * second call for the same movie is a no-op instead of a second thread-hogging task.
+     *
+     * @return false when this movie is already queued or downloading
+     */
+    public boolean startDownloadAsync(Long movieId, String magnetUrl) {
+        if (!submitted.add(movieId)) {
+            log.debug("Download for movie {} is already queued or running, ignoring the new request", movieId);
+            return false;
+        }
+
+        try {
+            torrentExecutor.execute(() -> runDownload(movieId, magnetUrl));
+            return true;
+        } catch (RuntimeException rejected) {
+            // Queue full: let go of the claim so the movie can be asked for again.
+            submitted.remove(movieId);
+            log.error("Could not queue the download for movie {}", movieId, rejected);
+            movieDownloadRepository.findByMovieId(movieId).ifPresent(download -> {
+                download.setStatus(DownloadStatus.FAILED);
+                movieDownloadRepository.save(download);
+            });
+            return false;
+        }
+    }
+
+    private void runDownload(Long movieId, String magnetUrl) {
+        TorrentRuntimePool.Lease lease = null;
         try {
             log.info("Starting background download for movie: {}", movieId);
+
+            // This download's own runtime: a torrent started in a runtime that already
+            // has one running never finds a peer (see TorrentRuntimePool).
+            lease = runtimePool.acquire(movieId);
             
             // --- STEP 1: Directory & Format Detection ---
             Path movieDir = Paths.get(videoStoragePath, String.valueOf(movieId));
@@ -75,7 +129,7 @@ public class TorrentDownloadWorker {
             // --- STEP 2: Configure & Build BtClient ---
             Storage storage = new FileSystemStorage(movieDir);
             SequentialPieceSelector selector = new SequentialPieceSelector(isMp4);
-            BtClient client = Bt.client(btRuntime)
+            BtClient client = Bt.client(lease.runtime())
                 .storage(storage)
                 .magnet(magnetUrl)
                 .selector(selector)
@@ -95,10 +149,22 @@ public class TorrentDownloadWorker {
                 AtomicLong previousDownloaded = new AtomicLong(0);
                 AtomicBoolean readyToStreamMarked = new AtomicBoolean(false);
 
+                // bt asks the DHT for peers on its own once a torrent's metadata is known,
+                // and periodically per runtime. Nudging it while nothing is coming in gets
+                // a fresh runtime past its DHT bootstrap sooner and revives a swarm that
+                // has gone quiet.
+                IPeerRegistry peerRegistry = lease.runtime().service(IPeerRegistry.class);
+                TorrentId torrentId = torrentIdOf(magnetUrl);
+                AtomicLong lastPeerTrigger = new AtomicLong(0);
+
                 CompletableFuture<?> future = client.startAsync(sessionState -> {
                     Long downloaded = sessionState.getDownloaded();
                     Long left = sessionState.getLeft();
-                    Long total = downloaded + left;
+                    // A negative "left" means the metadata has not been fetched yet, so
+                    // the real size is still unknown - reporting it as -1 would make the
+                    // progress maths nonsense.
+                    boolean metadataKnown = left >= 0;
+                    Long total = metadataKnown ? downloaded + left : 0L;
 
                     // 1. Calculate speed: (bytes now - bytes 1 second ago)
                     Long prev = previousDownloaded.get();
@@ -108,6 +174,17 @@ public class TorrentDownloadWorker {
                         speed = 0l;
                     }
                     previousDownloaded.set(downloaded);
+
+                    // 1b. No metadata yet, or no bytes moving: go looking for peers.
+                    if (torrentId != null && (!metadataKnown || speed == 0)) {
+                        long now = System.currentTimeMillis();
+                        if (now - lastPeerTrigger.get() >= PEER_TRIGGER_INTERVAL_MS) {
+                            lastPeerTrigger.set(now);
+                            peerRegistry.triggerPeerCollection(torrentId);
+                            log.info("Movie {}: {} - asking the DHT for peers again", movieId,
+                                    metadataKnown ? "no data coming in" : "still waiting for the torrent metadata");
+                        }
+                    }
 
                     // 2. Calculate percentage (0.0 to 100.0)
                     double progress = 0.0;
@@ -135,7 +212,7 @@ public class TorrentDownloadWorker {
 
                     // 4. Determine status
                     DownloadStatus currentStatus;
-                    if (sessionState.getPiecesRemaining() == 0) {
+                    if (metadataKnown && sessionState.getPiecesRemaining() == 0) {
                         currentStatus = DownloadStatus.COMPLETED;
                     } else if (readyToStreamMarked.get()) {
                         currentStatus = DownloadStatus.READY_TO_STREAM;
@@ -163,8 +240,14 @@ public class TorrentDownloadWorker {
             // Wait here on the worker thread until download completes or is stopped
             future.join();
 
+            // stopDownload() already took the client out, so the join returned on a
+            // cancelled download - it is PAUSED, not finished.
+            if (activeClients.remove(movieId) == null) {
+                log.info("Download for movie {} was stopped before it finished", movieId);
+                return;
+            }
+
             // Download completed 100%!
-            activeClients.remove(movieId);
             log.info("Download completed successfully for movie: {}", movieId);
             movieDownloadRepository.findByMovieId(movieId).ifPresent(download -> {
                 download.setStatus(DownloadStatus.COMPLETED);
@@ -173,12 +256,27 @@ public class TorrentDownloadWorker {
             });
         } catch (Exception e) {
             log.error("Error starting download for movie: {}", movieId, e);
+            activeClients.remove(movieId);
+            progressCache.remove(movieId);
             movieDownloadRepository.findByMovieId(movieId).ifPresent(download -> {
                 download.setStatus(DownloadStatus.FAILED);
                 movieDownloadRepository.save(download);
-                activeClients.remove(movieId);
-                progressCache.remove(movieId);
             });
+        } finally {
+            // Frees the runtime's ports and the claim, so both can serve a retry or
+            // another movie - the thread itself is already back in the pool.
+            runtimePool.release(lease);
+            submitted.remove(movieId);
+        }
+    }
+
+    /** The info hash bt knows the torrent by, so we can drive its peer lookups. */
+    private TorrentId torrentIdOf(String magnetUrl) {
+        try {
+            return MagnetUriParser.lenientParser().parse(magnetUrl).getTorrentId();
+        } catch (Exception e) {
+            log.warn("Could not read the info hash out of the magnet link: {}", e.getMessage());
+            return null;
         }
     }
 

@@ -66,7 +66,10 @@ public class TorrentServiceImpl implements TorrentService{
     @Override
     public Optional<TorrentResultDto> resolve( String imdbId ) {
 
-        if ( imdbId.equals( null ) ) return null;
+        // Was imdbId.equals(null), which is always false and throws on the very input it
+        // meant to guard against. Callers unwrap the Optional, so returning null here
+        // only moved the failure one frame up.
+        if ( imdbId == null || imdbId.isBlank() ) return Optional.empty();
         // get piratebay torrent data 
         List<TorrentResultDto> torrentMovieData = new ArrayList<>(
             this.ytsTorrentClient.search(imdbId)

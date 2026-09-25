@@ -19,11 +19,15 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.client.RestClient;
 
 // import com.filmexa.stream.modules.torrent.dto.TorrentProviderResponseData;
+import com.filmexa.stream.modules.torrent.dto.yts.Movie;
 import com.filmexa.stream.modules.torrent.dto.yts.YtsResponseDto;
 import com.filmexa.stream.modules.torrent.dto.yts.YtsTorrentDto;
 import com.filmexa.stream.modules.torrent.dto.TorrentResultDto;
 
+import lombok.extern.slf4j.Slf4j;
+
 @Component("ytsClient")
+@Slf4j
 public class YtsClient implements TorrentClient {
 
     private final RestClient restClient;
@@ -39,8 +43,21 @@ public class YtsClient implements TorrentClient {
             .uri("?imdb_id={imdId}", imdbId )
             .retrieve()
             .body( YtsResponseDto.class );
-        Integer id = response.getData().getMovie().getId();
-        List<YtsTorrentDto> dataYts =  response.getData().getMovie().getTorrents();
+
+        // YTS answers 200 with an empty payload for a film it does not carry: no data,
+        // no movie, or a movie with no torrents. That is "nothing found", not an error,
+        // so the other providers still get their turn.
+        Movie movie = response == null || response.getData() == null
+                ? null
+                : response.getData().getMovie();
+        List<YtsTorrentDto> dataYts = movie == null ? null : movie.getTorrents();
+
+        if ( dataYts == null || dataYts.isEmpty() ) {
+            log.info( "YTS has no torrent for {}", imdbId );
+            return List.of();
+        }
+
+        Integer id = movie.getId();
         // map yts response to common client data
         return dataYts.stream()
             .map( torrent -> new TorrentResultDto(
