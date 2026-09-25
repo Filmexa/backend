@@ -6,7 +6,7 @@
 /*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/14 12:33:45 by maddou            #+#    #+#             */
-/*   Updated: 2026/09/23 11:35:57 by marouan          ###   ########.fr       */
+/*   Updated: 2026/09/25 18:55:18 by marouan          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -184,7 +184,6 @@ public class MovieServiceImpl implements MovieService {
                 query.getGenreId() != null && query.getGenreId() == 100 ? mapSort( MovieSort.RATING ) : mapSort( query.getSortBy() ),
                 pageNumber
             );
-            System.out.println(providerRequest);
             TmdbMoviesPageableResponse movies = movieProvider.discoverMovies( providerRequest );
             return new MoviePageResponse(
                 movies.getPage(),
