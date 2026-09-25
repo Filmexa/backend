@@ -25,4 +25,5 @@ public class MoviesProviderData {
     String  release_date;
     Double  vote_average;
     String  poster_path;
+    boolean adult;
 }
