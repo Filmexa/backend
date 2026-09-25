@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -64,6 +65,8 @@ public class StreamServiceImpl implements StreamService {
      * taken at its word. The video file is always a little smaller than the torrent.
      */
     private static final double COMPLETE_FILE_RATIO = 0.95;
+    /** Retry an incomplete-file probe after a short cooldown instead of on every poll. */
+    private static final long FAILED_PROBE_RETRY_DELAY_MS = 5_000;
 
     private static final Set<String> VIDEO_EXTENSIONS =
             Set.of("mp4", "mkv", "avi", "mov", "m4v", "webm", "wmv", "flv", "mpg", "mpeg", "ts");
@@ -91,6 +94,7 @@ public class StreamServiceImpl implements StreamService {
     private String videoStoragePath;
 
     private final Map<Long, MediaInfo> probes = new ConcurrentHashMap<>();
+    private final Map<Long, AtomicLong> probeRetryAtMs = new ConcurrentHashMap<>();
 
     /** TMDB's original_language per movie. One lookup per movie, then served from memory. */
     private final Map<Long, String> originalLanguages = new ConcurrentHashMap<>();
@@ -460,7 +464,7 @@ public class StreamServiceImpl implements StreamService {
     }
 
     /** Probes on first use, then serves from memory. */
-    private MediaInfo mediaInfo(Long movieId) {
+    MediaInfo mediaInfo(Long movieId) {
         MediaInfo cached = probes.get(movieId);
         // The cleanup job can delete a movie out from under a cached probe, so confirm
         // the file is still there rather than handing back a path to nothing.
@@ -473,9 +477,35 @@ public class StreamServiceImpl implements StreamService {
                 .orElseThrow(() -> new NotFoundException(
                         "No downloaded video file found for movie " + movieId));
 
-        MediaInfo info = ffmpeg.probe(file);
-        probes.put(movieId, info);
-        return info;
+        long now = System.currentTimeMillis();
+        AtomicLong retryAt = probeRetryAtMs.computeIfAbsent(movieId, ignored -> new AtomicLong());
+        long nextAttemptAt = retryAt.get();
+        if (now < nextAttemptAt) {
+            throw probeCooldown(nextAttemptAt, now);
+        }
+        long retryAfterProbe = now + FAILED_PROBE_RETRY_DELAY_MS;
+        if (!retryAt.compareAndSet(nextAttemptAt, retryAfterProbe)) {
+            throw probeCooldown(retryAt.get(), System.currentTimeMillis());
+        }
+
+        try {
+            MediaInfo info = ffmpeg.probe(file);
+            probes.put(movieId, info);
+            probeRetryAtMs.remove(movieId, retryAt);
+            return info;
+        } catch (StreamNotReadyException notReady) {
+            // Probe only occasionally while a large moov/index is still arriving. The
+            // torrent keeps downloading between attempts, without spawning ffprobe on
+            // every stream-session poll or flooding the backend log with the same error.
+            retryAt.set(System.currentTimeMillis() + FAILED_PROBE_RETRY_DELAY_MS);
+            throw notReady;
+        }
+    }
+
+    private StreamNotReadyException probeCooldown(long nextAttemptAt, long now) {
+        int retryAfterSeconds = (int) Math.max(1, (nextAttemptAt - now + 999) / 1_000);
+        return new StreamNotReadyException(
+                "Waiting for more of the movie file to download", retryAfterSeconds);
     }
 
     /**

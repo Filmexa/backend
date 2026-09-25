@@ -18,13 +18,29 @@ import bt.torrent.selector.PieceSelector;
 public class SequentialPieceSelector implements PieceSelector {
 
     private int totalPieces;
-    private volatile boolean isMp4;
+    /** Tail pieces of an MP4, where a non-faststart moov atom usually lives. */
+    private volatile BitSet prioritizedIndexPieces = new BitSet();
+    /** Pieces occupied by the selected video file, which may start after torrent piece 0. */
+    private volatile BitSet videoPieces = new BitSet();
 
     /** Where playback is, in pieces. Everything from here on is wanted first. */
     private volatile int playheadPiece = 0;
 
-    public SequentialPieceSelector(boolean isMp4) {
-        this.isMp4 = isMp4;
+    public SequentialPieceSelector() {
+    }
+
+    /**
+     * Prioritizes the selected MP4's trailing index pieces after the movie header.
+     * The torrent metadata is needed to find it; the magnet URI does not contain the
+     * video filename reliably.
+     */
+    public void setIndexPieces(BitSet indexPieces) {
+        this.prioritizedIndexPieces = (BitSet) indexPieces.clone();
+    }
+
+    /** Sets the selected movie's pieces in global torrent piece coordinates. */
+    public void setVideoPieces(BitSet pieces) {
+        this.videoPieces = (BitSet) pieces.clone();
     }
 
     @Override
@@ -40,6 +56,19 @@ public class SequentialPieceSelector implements PieceSelector {
      */
     public int seekToFraction(double fraction) {
         int pieces = totalPieces;
+        BitSet moviePieces = videoPieces;
+        if (!moviePieces.isEmpty()) {
+            double clamped = Math.min(1.0, Math.max(0.0, fraction));
+            int ordinal = Math.min(moviePieces.cardinality() - 1,
+                    (int) (clamped * moviePieces.cardinality()));
+            int target = moviePieces.nextSetBit(0);
+            for (int i = 0; i < ordinal; i++) {
+                target = moviePieces.nextSetBit(target + 1);
+            }
+            this.playheadPiece = target;
+            return target;
+        }
+
         if (pieces <= 0) {
             return 0;
         }
@@ -61,42 +90,70 @@ public class SequentialPieceSelector implements PieceSelector {
         }
 
         IntStream.Builder builder = IntStream.builder();
+        BitSet moviePieces = videoPieces;
 
-        // The header has to come first whatever the playhead says - nothing can be
-        // decoded, or even probed, without it.
+        if (!moviePieces.isEmpty()) {
+            int headerPiece = moviePieces.nextSetBit(0);
+            if (relevantChunks.get(headerPiece)) {
+                builder.add(headerPiece);
+            }
+
+            BitSet indexPieces = prioritizedIndexPieces;
+            indexPieces.stream()
+                    .filter(moviePieces::get)
+                    .filter(relevantChunks::get)
+                    .filter(i -> i != headerPiece)
+                    .forEach(builder::add);
+
+            int playhead = playheadPiece;
+            moviePieces.stream()
+                    .filter(i -> i >= playhead)
+                    .filter(relevantChunks::get)
+                    .filter(i -> i != headerPiece && !indexPieces.get(i))
+                    .forEach(builder::add);
+
+            moviePieces.stream()
+                    .filter(i -> i < playhead)
+                    .filter(relevantChunks::get)
+                    .filter(i -> i != headerPiece && !indexPieces.get(i))
+                    .forEach(builder::add);
+
+            // Ancillary torrent files still need to finish eventually, after the selected
+            // movie's playback pieces have been requested.
+            relevantChunks.stream()
+                    .filter(i -> !moviePieces.get(i))
+                    .forEach(builder::add);
+            return builder.build();
+        }
+
+        // Until torrent metadata identifies the movie file, fall back to piece zero.
         if (relevantChunks.get(0)) {
             builder.add(0);
         }
 
-        int lastPiece = totalPieces - 1;
-        if (isMp4 && totalPieces > 1 && relevantChunks.get(lastPiece)) {
-            builder.add(lastPiece);
-        }
+        BitSet indexPieces = prioritizedIndexPieces;
+        indexPieces.stream()
+                .filter(i -> i > 0 && i < totalPieces && relevantChunks.get(i))
+                .forEach(builder::add);
 
         int playhead = playheadPiece;
 
         // From the playhead to the end of the file...
         relevantChunks.stream()
                 .filter(i -> i >= playhead)
-                .filter(i -> shouldKeepPiece(i, lastPiece))
+                .filter(i -> shouldKeepPiece(i, indexPieces))
                 .forEach(builder::add);
 
         // ...then everything skipped over, so a seek does not abandon it for good.
         relevantChunks.stream()
                 .filter(i -> i < playhead)
-                .filter(i -> shouldKeepPiece(i, lastPiece))
+                .filter(i -> shouldKeepPiece(i, indexPieces))
                 .forEach(builder::add);
 
         return builder.build();
     }
 
-    private boolean shouldKeepPiece(int pieceIndex, int lastPiece) {
-        if (pieceIndex == 0) {
-            return false; 
-        }
-        if (isMp4 && pieceIndex == lastPiece) {
-            return false; 
-        }
-        return true; 
+    private boolean shouldKeepPiece(int pieceIndex, BitSet indexPieces) {
+        return pieceIndex != 0 && !indexPieces.get(pieceIndex);
     }
 }

@@ -1,6 +1,7 @@
 package com.filmexa.stream.modules.streaming.serviceImpl;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -10,6 +11,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.times;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -19,6 +22,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
@@ -35,6 +39,7 @@ import com.filmexa.stream.modules.moviesExternal.client.MovieProvider;
 import com.filmexa.stream.modules.streaming.config.StreamProperties;
 import com.filmexa.stream.modules.streaming.dto.StreamSessionDto;
 import com.filmexa.stream.modules.streaming.enums.StreamState;
+import com.filmexa.stream.modules.streaming.exception.StreamNotReadyException;
 import com.filmexa.stream.modules.streaming.ffmpeg.Ffmpeg;
 import com.filmexa.stream.modules.streaming.playlist.PlaylistBuilder;
 import com.filmexa.stream.modules.streaming.security.StreamTokenService;
@@ -51,6 +56,8 @@ class StreamServiceImplTest {
     @Mock private MovieDownloadRepository movieDownloadRepository;
     @Mock private TorrentService torrentService;
     @Mock private MovieProvider movieProvider;
+
+    @TempDir Path tempDir;
 
     private StreamServiceImpl streamService;
 
@@ -129,5 +136,24 @@ class StreamServiceImplTest {
         verify(torrentDownloadService).restartDownload(org.mockito.ArgumentMatchers.argThat(
                 request -> request.getMovieId().equals(movieId)));
         verify(torrentDownloadService, never()).startDownload(any(DownloadRequestDto.class));
+    }
+
+    @Test
+    void incompleteMovieProbeIsThrottledWhileMorePiecesArrive() throws Exception {
+        long movieId = 505L;
+        Path movieDirectory = Files.createDirectory(tempDir.resolve(String.valueOf(movieId)));
+        Path partialMovie = Files.createFile(movieDirectory.resolve("partial.mp4"));
+        ReflectionTestUtils.setField(streamService, "videoStoragePath", tempDir.toString());
+        when(ffmpeg.probe(any())).thenThrow(
+                new StreamNotReadyException("Not enough of this movie has downloaded yet", 10));
+
+        assertThatThrownBy(() -> streamService.mediaInfo(movieId))
+                .isInstanceOf(StreamNotReadyException.class)
+                .hasMessage("Not enough of this movie has downloaded yet");
+        assertThatThrownBy(() -> streamService.mediaInfo(movieId))
+                .isInstanceOf(StreamNotReadyException.class)
+                .hasMessage("Waiting for more of the movie file to download");
+
+        verify(ffmpeg, times(1)).probe(partialMovie.toAbsolutePath());
     }
 }

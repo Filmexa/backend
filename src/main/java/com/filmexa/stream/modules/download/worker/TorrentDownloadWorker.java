@@ -11,9 +11,11 @@ import bt.data.file.FileSystemStorage;
 import bt.data.Bitfield;
 import bt.magnet.MagnetUriParser;
 import bt.metainfo.TorrentId;
+import bt.metainfo.TorrentFile;
 import bt.runtime.BtRuntime;
 import bt.torrent.TorrentDescriptor;
 import bt.torrent.TorrentRegistry;
+import bt.metainfo.Torrent;
 import bt.peer.IPeerRegistry;
 import bt.runtime.BtClient;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +29,8 @@ import org.springframework.beans.factory.annotation.Value;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.BitSet;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -36,6 +40,13 @@ import java.time.LocalDateTime;
 @Component
 @Slf4j
 public class TorrentDownloadWorker {
+
+    /** MP4 sample tables at the end can span multiple pieces; fetch a bounded tail first. */
+    private static final long MP4_INDEX_PREFETCH_BYTES = 32L * 1024 * 1024;
+    /** ffprobe can try once the header and final MP4 piece are present. */
+    private static final int MP4_PROBE_TAIL_PIECES = 2;
+    private static final Set<String> VIDEO_EXTENSIONS = Set.of(
+            "mp4", "mkv", "avi", "mov", "m4v", "webm", "wmv", "flv", "mpg", "mpeg", "ts");
 
     /** How often we ask the DHT for peers again while a download is getting nowhere. */
     private static final long PEER_TRIGGER_INTERVAL_MS = 5_000;
@@ -63,6 +74,8 @@ public class TorrentDownloadWorker {
     /** Per-download handles for answering "is this part of the film on disk?". */
     private final Map<Long, BtRuntime> runtimes = new ConcurrentHashMap<>();
     private final Map<Long, TorrentId> torrentIds = new ConcurrentHashMap<>();
+    /** The selected video file's byte and piece range inside its torrent. */
+    private final Map<Long, VideoFileLayout> videoFileLayouts = new ConcurrentHashMap<>();
 
     private final TorrentRuntimePool runtimePool;
     private final Executor torrentExecutor;
@@ -131,14 +144,33 @@ public class TorrentDownloadWorker {
             }
 
             Bitfield bitfield = descriptor.get().getDataDescriptor().getBitfield();
-            int total = bitfield.getPiecesTotal();
-            if (total <= 0) {
+            VideoFileLayout layout = videoFileLayouts.get(movieId);
+            if (layout == null || layout.pieceSize() <= 0 || layout.fileSize() <= 0) {
+                // A magnet's metadata may have arrived between the worker heartbeat and
+                // this stream poll. Configure the layout once before probing the file.
+                SequentialPieceSelector selector = selectors.get(movieId);
+                if (selector != null && configureVideoFileLayout(runtime, torrentId, selector, movieId)) {
+                    layout = videoFileLayouts.get(movieId);
+                }
+            }
+            if (layout == null || layout.pieceSize() <= 0 || layout.fileSize() <= 0) {
                 return Optional.empty();
             }
 
-            int first = pieceAt(fromFraction, total);
-            int last = pieceAt(toFraction, total);
+            double from = clampFraction(fromFraction);
+            double to = Math.max(from, clampFraction(toFraction));
+            long startInFile = Math.min(layout.fileSize() - 1,
+                    (long) Math.floor(from * layout.fileSize()));
+            long endInFile = Math.max(startInFile + 1,
+                    Math.min(layout.fileSize(), (long) Math.ceil(to * layout.fileSize())));
+            int first = Math.toIntExact((layout.fileOffset() + startInFile) / layout.pieceSize());
+            int last = Math.toIntExact((layout.fileOffset() + endInFile - 1) / layout.pieceSize());
             for (int piece = first; piece <= last; piece++) {
+                // The range must belong to the selected video. This also protects us from
+                // bad metadata or a stale layout after a torrent is replaced.
+                if (!layout.videoPieces().get(piece)) {
+                    return Optional.of(false);
+                }
                 if (!bitfield.isComplete(piece)) {
                     return Optional.of(false);
                 }
@@ -150,9 +182,43 @@ public class TorrentDownloadWorker {
         }
     }
 
-    private int pieceAt(double fraction, int totalPieces) {
-        double clamped = Math.min(1.0, Math.max(0.0, fraction));
-        return Math.min(totalPieces - 1, (int) (clamped * totalPieces));
+    /**
+     * ffprobe needs the file header and, for non-faststart MP4s, the trailing moov index.
+     * Waiting for both avoids repeatedly probing a file whose required metadata pieces
+     * have not arrived yet.
+     */
+    Optional<Boolean> isInitialProbeDataDownloaded(Long movieId) {
+        BtRuntime runtime = runtimes.get(movieId);
+        TorrentId torrentId = torrentIds.get(movieId);
+        VideoFileLayout layout = videoFileLayouts.get(movieId);
+        if (runtime == null || torrentId == null || layout == null) {
+            return Optional.empty();
+        }
+
+        try {
+            Optional<TorrentDescriptor> descriptor =
+                    runtime.service(TorrentRegistry.class).getDescriptor(torrentId);
+            if (descriptor.isEmpty() || descriptor.get().getDataDescriptor() == null) {
+                return Optional.empty();
+            }
+
+            Bitfield bitfield = descriptor.get().getDataDescriptor().getBitfield();
+            for (int piece = layout.requiredProbePieces().nextSetBit(0);
+                    piece >= 0;
+                    piece = layout.requiredProbePieces().nextSetBit(piece + 1)) {
+                if (piece >= bitfield.getPiecesTotal() || !bitfield.isComplete(piece)) {
+                    return Optional.of(false);
+                }
+            }
+            return Optional.of(true);
+        } catch (Exception e) {
+            log.debug("Could not read probe pieces for movie {}: {}", movieId, e.getMessage());
+            return Optional.empty();
+        }
+    }
+
+    private double clampFraction(double fraction) {
+        return Math.min(1.0, Math.max(0.0, fraction));
     }
 
     public void stopDownload(Long movieId) {
@@ -163,6 +229,7 @@ public class TorrentDownloadWorker {
             selectors.remove(movieId);
             runtimes.remove(movieId);
             torrentIds.remove(movieId);
+            videoFileLayouts.remove(movieId);
             log.info("Stopped download for movie with ID: {}", movieId);
             movieDownloadRepository.findByMovieId(movieId).ifPresent(download -> {
                 download.setStatus(DownloadStatus.PAUSED);
@@ -206,15 +273,14 @@ public class TorrentDownloadWorker {
             // This download's own runtime: a torrent started in a runtime that already
             // has one running never finds a peer (see TorrentRuntimePool).
             lease = runtimePool.acquire(movieId);
+            BtRuntime downloadRuntime = lease.runtime();
             
-            // --- STEP 1: Directory & Format Detection ---
+            // --- STEP 1: Prepare the movie's download directory ---
             Path movieDir = Paths.get(videoStoragePath, String.valueOf(movieId));
             Files.createDirectories(movieDir);
-            boolean isMp4 = magnetUrl.toLowerCase().contains(".mp4");
-            
             // --- STEP 2: Configure & Build BtClient ---
             Storage storage = new FileSystemStorage(movieDir);
-            SequentialPieceSelector selector = new SequentialPieceSelector(isMp4);
+            SequentialPieceSelector selector = new SequentialPieceSelector();
             selectors.put(movieId, selector);
             BtClient client = Bt.client(lease.runtime())
                 .storage(storage)
@@ -246,6 +312,7 @@ public class TorrentDownloadWorker {
                 if (torrentId != null) {
                     torrentIds.put(movieId, torrentId);
                 }
+                AtomicBoolean videoFileLayoutConfigured = new AtomicBoolean(false);
                 AtomicLong lastPeerTrigger = new AtomicLong(0);
                 AtomicLong lastProgressPersist = new AtomicLong(System.currentTimeMillis());
 
@@ -257,6 +324,15 @@ public class TorrentDownloadWorker {
                     // progress maths nonsense.
                     boolean metadataKnown = left >= 0;
                     Long total = metadataKnown ? downloaded + left : 0L;
+
+                    // A magnet URI does not reliably include the file extension. Once
+                    // metadata is available, map the selected video's real torrent byte
+                    // range, then prioritize its header and (for MP4) its trailing index.
+                    if (metadataKnown && torrentId != null && !videoFileLayoutConfigured.get()) {
+                        if (configureVideoFileLayout(downloadRuntime, torrentId, selector, movieId)) {
+                            videoFileLayoutConfigured.set(true);
+                        }
+                    }
 
                     // 1. Calculate speed: (bytes now - bytes 1 second ago)
                     Long prev = previousDownloaded.get();
@@ -284,16 +360,18 @@ public class TorrentDownloadWorker {
                         progress = ((double) downloaded / total) * 100.0;
                     }
 
-                    // 3. 42 Rule: Check if buffer reached (8 MB AND Piece 0 complete, or complete file)
-                    boolean headerReady = isRangeDownloaded(movieId, 0.0, 0.001).orElse(false);
+                    // 3. Check the buffer threshold and every piece ffprobe needs. For
+                    // non-faststart MP4s this includes the trailing moov/index pieces.
+                    boolean probeDataReady = isInitialProbeDataDownloaded(movieId).orElse(false);
                     boolean streamReady = false;
-                    if ((downloaded >= 8 * 1024 * 1024 && headerReady) || (total > 0 && downloaded.equals(total))) {
+                    if ((downloaded >= 8 * 1024 * 1024 && probeDataReady)
+                            || (total > 0 && downloaded.equals(total))) {
                         streamReady = true;
                     }
 
                     if (streamReady && !readyToStreamMarked.get()) {
                         readyToStreamMarked.set(true);
-                        log.info("Movie {} reached 8 MB buffer! Ready to stream.", movieId);
+                        log.info("Movie {} reached the initial streaming threshold.", movieId);
 
                         movieDownloadRepository.findByMovieId(movieId).ifPresent(download -> {
                             download.setStatus(DownloadStatus.READY_TO_STREAM);
@@ -385,8 +463,118 @@ public class TorrentDownloadWorker {
             selectors.remove(movieId);
             runtimes.remove(movieId);
             torrentIds.remove(movieId);
+            videoFileLayouts.remove(movieId);
             submitted.remove(movieId);
         }
+    }
+
+    /**
+     * Configures the selected video's torrent byte/piece range and playback priorities.
+     * Returns false only while metadata or the data descriptor is unavailable, so the
+     * heartbeat can retry.
+     */
+    boolean configureVideoFileLayout(BtRuntime runtime, TorrentId torrentId,
+            SequentialPieceSelector selector, Long movieId) {
+        try {
+            TorrentRegistry registry = runtime.service(TorrentRegistry.class);
+            Optional<Torrent> torrent = registry.getTorrent(torrentId);
+            Optional<TorrentDescriptor> descriptor = registry.getDescriptor(torrentId);
+            if (torrent.isEmpty() || descriptor.isEmpty()
+                    || descriptor.get().getDataDescriptor() == null) {
+                return false;
+            }
+
+            var files = torrent.get().getFiles();
+            int videoIndex = -1;
+            long largestVideoSize = -1;
+            for (int i = 0; i < files.size(); i++) {
+                TorrentFile file = files.get(i);
+                if (isVideoFile(file) && file.getSize() > largestVideoSize) {
+                    videoIndex = i;
+                    largestVideoSize = file.getSize();
+                }
+            }
+
+            selector.setIndexPieces(new BitSet());
+            if (videoIndex < 0) {
+                selector.setVideoPieces(new BitSet());
+                videoFileLayouts.remove(movieId);
+                log.debug("Movie {}: torrent metadata contains no video file", movieId);
+                return true;
+            }
+
+            long fileOffset = 0;
+            for (int i = 0; i < videoIndex; i++) {
+                fileOffset = Math.addExact(fileOffset, files.get(i).getSize());
+            }
+
+            TorrentFile video = files.get(videoIndex);
+            long pieceSize = torrent.get().getChunkSize();
+            BitSet videoPieces = descriptor.get().getDataDescriptor()
+                    .getAllPiecesForFiles(Set.of(video));
+            if (videoPieces.isEmpty() || pieceSize <= 0 || video.getSize() <= 0) {
+                return false;
+            }
+
+            BitSet videoPiecesCopy = (BitSet) videoPieces.clone();
+            BitSet requiredProbePieces = new BitSet();
+            requiredProbePieces.set(videoPieces.nextSetBit(0));
+            selector.setVideoPieces(videoPiecesCopy);
+
+            if (fileName(video).toLowerCase(Locale.ROOT).endsWith(".mp4")) {
+                int lastVideoPiece = videoPieces.previousSetBit(videoPieces.length() - 1);
+                int firstVideoPiece = videoPieces.nextSetBit(0);
+                long piecesToPrioritize = Math.max(1L, MP4_INDEX_PREFETCH_BYTES / pieceSize
+                        + (MP4_INDEX_PREFETCH_BYTES % pieceSize == 0 ? 0 : 1));
+                int firstIndexPiece = (int) Math.max(firstVideoPiece,
+                        (long) lastVideoPiece - piecesToPrioritize + 1);
+                BitSet prioritizedPieces = (BitSet) videoPieces.clone();
+                prioritizedPieces.clear(0, firstIndexPiece);
+                selector.setIndexPieces(prioritizedPieces);
+                // Prioritize the whole tail, but only gate on its final piece. ffprobe can
+                // tell us whether the moov atom is readable; if it spans further back, the
+                // stream retry lets the torrent fill those pieces without waiting for the
+                // entire 32 MiB prefetch window first.
+                requiredProbePieces.set(lastVideoPiece);
+                int previousTailPiece = videoPieces.previousSetBit(lastVideoPiece - 1);
+                if (previousTailPiece >= firstVideoPiece
+                        && MP4_PROBE_TAIL_PIECES > 1) {
+                    // One preceding piece allows small moov atoms crossing a piece boundary
+                    // to be read on the first probe attempt.
+                    requiredProbePieces.set(previousTailPiece);
+                }
+                log.info("Movie {}: prioritizing {} MP4 index piece(s) through piece {}",
+                        movieId, prioritizedPieces.cardinality(), lastVideoPiece);
+            }
+
+            videoFileLayouts.put(movieId, new VideoFileLayout(
+                    fileOffset, video.getSize(), pieceSize, videoPiecesCopy, requiredProbePieces));
+
+            runtimes.put(movieId, runtime);
+            torrentIds.put(movieId, torrentId);
+            log.info("Movie {}: selected video {} spans bytes {}-{} and pieces {}-{}",
+                    movieId, fileName(video), fileOffset, fileOffset + video.getSize() - 1,
+                    videoPieces.nextSetBit(0), videoPieces.previousSetBit(videoPieces.length() - 1));
+            return true;
+        } catch (RuntimeException e) {
+            log.debug("Could not configure video file layout for movie {} yet: {}", movieId, e.getMessage());
+            return false;
+        }
+    }
+
+    private record VideoFileLayout(long fileOffset, long fileSize, long pieceSize,
+            BitSet videoPieces, BitSet requiredProbePieces) {
+    }
+
+    private boolean isVideoFile(TorrentFile file) {
+        String name = fileName(file).toLowerCase(Locale.ROOT);
+        int extensionSeparator = name.lastIndexOf('.');
+        return extensionSeparator >= 0 && VIDEO_EXTENSIONS.contains(name.substring(extensionSeparator + 1));
+    }
+
+    private String fileName(TorrentFile file) {
+        var path = file.getPathElements();
+        return path.isEmpty() ? "" : path.get(path.size() - 1);
     }
 
     /** The info hash bt knows the torrent by, so we can drive its peer lookups. */
