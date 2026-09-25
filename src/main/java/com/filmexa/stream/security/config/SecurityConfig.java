@@ -33,6 +33,8 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import com.filmexa.stream.security.filter.JwtAuthenticationFilter;
+import com.filmexa.stream.security.handler.RestAccessDeniedHandler;
+import com.filmexa.stream.security.handler.RestAuthenticationEntryPoint;
 
 import lombok.RequiredArgsConstructor;
 
@@ -68,14 +70,10 @@ public class SecurityConfig {
 			"/api/auth/facebook/callback"
 	};
 
-	private static final String[] PUBLIC_WHITELIST = {
-			"/api/movie-categories/**",
-			"/api/movies/**",
-			"/api/downloads/**"
-	};
-
 	private final UserDetailsService userDetailsService;
 	private final JwtAuthenticationFilter jwtAuthenticationFilter;
+	private final RestAuthenticationEntryPoint restAuthenticationEntryPoint;
+	private final RestAccessDeniedHandler restAccessDeniedHandler;
 
 	@Value("${app.cors.allowed-origins}")
 	private List<String> allowedOrigins;
@@ -90,9 +88,11 @@ public class SecurityConfig {
 		http.authorizeHttpRequests(auth -> auth
 						.requestMatchers(SWAGGER_WHITELIST).permitAll()
 						.requestMatchers(AUTH_WHITELIST).permitAll()
-						.requestMatchers(PUBLIC_WHITELIST).permitAll()
 						.requestMatchers("/error").permitAll()
 						.anyRequest().authenticated())
+				.exceptionHandling(ex -> ex
+						.authenticationEntryPoint(restAuthenticationEntryPoint)
+						.accessDeniedHandler(restAccessDeniedHandler))
 				.cors(cors -> cors.configurationSource(corsConfigurationSource()))
 				.csrf(csrf -> csrf.disable())
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

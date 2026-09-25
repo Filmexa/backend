@@ -117,7 +117,7 @@ public class TorrentDownloadWorker {
 
                     // 3. 42 Rule: Check if 10 MB buffer reached
                     boolean streamReady = false;
-                    if (downloaded >= 10 * 1024 * 1024) {
+                    if (downloaded >= 25 * 1024 * 1024) {
                         streamReady = true;
                     }
 
