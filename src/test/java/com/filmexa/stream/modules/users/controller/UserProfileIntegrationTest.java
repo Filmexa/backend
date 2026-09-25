@@ -74,13 +74,14 @@ class UserProfileIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void updateMyProfile_shouldReturnForbidden_whenNotAuthenticated() throws Exception {
+    void updateMyProfile_shouldReturnUnauthorized_whenNotAuthenticated() throws Exception {
         mockMvc.perform(patch("/api/users/me/profile")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"firstName":"Jane"}
                                 """))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401));
     }
 
     @Test

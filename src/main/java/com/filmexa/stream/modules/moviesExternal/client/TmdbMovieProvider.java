@@ -6,7 +6,7 @@
 /*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/13 10:29:13 by maddou            #+#    #+#             */
-/*   Updated: 2026/09/25 19:12:46 by marouan          ###   ########.fr       */
+/*   Updated: 2026/09/25 21:34:56 by marouan          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -47,7 +47,7 @@ public class TmdbMovieProvider implements MovieProvider {
         try{
             MoviesDetailsResponse response =  this.restClient
                 .get()
-                .uri("/trending/movie/week?language={language}", language)
+                .uri("/trending/movie/week?language={language}&include_adult=false", language)
                 .retrieve()
                 .body( MoviesDetailsResponse.class );
             if ( response == null ) {
@@ -68,7 +68,7 @@ public class TmdbMovieProvider implements MovieProvider {
         try{
             MovieData response =  this.restClient
                 .get()
-                .uri("/movie/top_rated?language={language}", language)
+                .uri("/movie/top_rated?language={language}&include_adult=false", language)
                 .retrieve()
                 .body( MovieData.class );
             if ( response == null ) {
@@ -89,7 +89,7 @@ public class TmdbMovieProvider implements MovieProvider {
         try {
             TmdbMoviesPageableResponse response =  this.restClient
                 .get()
-                .uri("/movie/top_rated?language={language}&page={page}", language, page )
+                .uri("/movie/top_rated?language={language}&include_adult=false&page={page}", language, page )
                 .retrieve()
                 .body( TmdbMoviesPageableResponse.class );
             if ( response == null ) {
@@ -112,7 +112,7 @@ public class TmdbMovieProvider implements MovieProvider {
         try {
             MovieData response =  this.restClient
                 .get()
-                .uri("/discover/movie?language={language}" +
+                .uri("/discover/movie?language={language}&include_adult=false" +
                 "&with_genres={id}&sort_by=popularity.desc" +
                 "&vote_average.gte=7" +
                 "&vote_count.gte=500&page=1", language, id )
@@ -136,7 +136,7 @@ public class TmdbMovieProvider implements MovieProvider {
         try {
             TmdbMoviesPageableResponse response =  this.restClient
                 .get()
-                .uri("/discover/movie?language={language}" +
+                .uri("/discover/movie?language={language}&include_adult=false" +
                 "&with_genres={id}" +
                 "&page={page}", language, id, page )
                 .retrieve()
@@ -161,7 +161,7 @@ public class TmdbMovieProvider implements MovieProvider {
         try {
             TmdbMoviesPageableResponse response =  this.restClient
                 .get()
-                .uri("/search/movie?language={language}" +
+                .uri("/search/movie?language={language}&include_adult=false" +
                 "&query={query}" +
                 "&page={page}", language, query, page )
                 .retrieve()
@@ -186,7 +186,7 @@ public class TmdbMovieProvider implements MovieProvider {
         try {
             MoviesDetailsPageableResponse response =  this.restClient
             .get()
-            .uri("/search/movie?language={language}" +
+            .uri("/search/movie?language={language}&include_adult=false" +
                 "&query={query}" +
                 "&page={page}" +
                 "&year={year}", language, query, page, year )
@@ -212,7 +212,7 @@ public class TmdbMovieProvider implements MovieProvider {
         try {
             TmdbMoviesPageableResponse response = this.restClient.get()
                 .uri(
-                    "/discover/movie?language={language}" +
+                    "/discover/movie?language={language}&include_adult=false" +
                     "&with_genres={genreId}" +
                     "&year={year}" +
                     "&vote_average.gte={minRating}" +
@@ -247,7 +247,7 @@ public class TmdbMovieProvider implements MovieProvider {
         try {
             MovieProvederData movieData = this.restClient
                 .get()
-                .uri("/movie/{id}?append_to_response=credits&language={language}", 
+                .uri("/movie/{id}?append_to_response=credits&language={language}&include_adult=false", 
                     id, 
                     language )
                 .retrieve()

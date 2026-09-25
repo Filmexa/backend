@@ -110,12 +110,13 @@ class AvatarIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void uploadAvatar_shouldReturnForbidden_whenNotAuthenticated() throws Exception {
+    void uploadAvatar_shouldReturnUnauthorized_whenNotAuthenticated() throws Exception {
         MockMultipartFile file = new MockMultipartFile(
                 "file", "avatar.png", "image/png", "bytes".getBytes(StandardCharsets.UTF_8));
 
         mockMvc.perform(multipart(HttpMethod.PUT, "/api/users/me/avatar").file(file))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401));
     }
 
     @Test

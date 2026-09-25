@@ -60,7 +60,7 @@ public class PlaylistBuilder {
      * Media playlist for a single rung. Marked as VOD with a full segment list and an
      * end tag, so the player allows seeking across the whole movie.
      */
-    public String media(MediaInfo info, Resolution resolution, String token) {
+    public String media(MediaInfo info, String token) {
         int segmentSeconds = properties.getSegmentSeconds();
         int count = segmentCount(info);
         double duration = info.durationSeconds();

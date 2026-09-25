@@ -7,6 +7,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -138,15 +139,20 @@ class AuthFlowIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void protectedEndpoint_shouldReturnForbidden_whenNoTokenProvided() throws Exception {
+    void protectedEndpoint_shouldReturnUnauthorized_whenNoTokenProvided() throws Exception {
         mockMvc.perform(get("/api/users/me/profile"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized())
+                .andExpect(header().string("WWW-Authenticate", "Bearer"))
+                .andExpect(jsonPath("$.status").value(401))
+                .andExpect(jsonPath("$.message").isNotEmpty());
     }
 
     @Test
-    void protectedEndpoint_shouldReturnForbidden_whenTokenIsInvalid() throws Exception {
+    void protectedEndpoint_shouldReturnUnauthorized_whenTokenIsInvalid() throws Exception {
         mockMvc.perform(get("/api/users/me/profile")
                         .header("Authorization", "Bearer not-a-real-token"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized())
+                .andExpect(header().string("WWW-Authenticate", "Bearer"))
+                .andExpect(jsonPath("$.status").value(401));
     }
 }

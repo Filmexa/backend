@@ -12,12 +12,14 @@
 
 package com.filmexa.stream.common.exception;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.lang.Exception;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -29,11 +31,16 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.web.util.DisconnectedClientHelper;
+
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 
 
 import com.filmexa.stream.common.utils.ErrorResponse;
 import com.filmexa.stream.modules.streaming.exception.StreamNotReadyException;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -161,16 +168,42 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status( HttpStatus.SERVICE_UNAVAILABLE )
                 .header( "Retry-After", String.valueOf( ex.getRetryAfterSeconds() ) )
+                .contentType( MediaType.APPLICATION_JSON )
                 .body( new ErrorResponse(
                         HttpStatus.SERVICE_UNAVAILABLE.value(),
                         ex.getMessage()
                 ) );
     }
 
+    /**
+     * The player walked away mid-segment (seek, pause, tab closed) and the socket is gone.
+     * Nothing can be written back, so this is a debug note rather than an error.
+     */
+    @ExceptionHandler( IOException.class )
+    public ResponseEntity<ErrorResponse> handleIoException( IOException ex, HttpServletResponse response ) {
+        if ( DisconnectedClientHelper.isClientDisconnectedException( ex ) ) {
+            log.debug( "Client disconnected before the response was finished: {}", ex.getMessage() );
+            return ResponseEntity.status( HttpStatus.SERVICE_UNAVAILABLE ).build();
+        }
+
+        return this.handleUnexpectedException( ex, response );
+    }
+
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> handleUnexpectedException( Exception ex ) {
-        System.out.println(ex.getMessage());
-            return builderResponse( 
+    public ResponseEntity<ErrorResponse> handleUnexpectedException( Exception ex, HttpServletResponse response ) {
+        if ( DisconnectedClientHelper.isClientDisconnectedException( ex ) ) {
+            log.debug( "Client disconnected before the response was finished: {}", ex.getMessage() );
+            return ResponseEntity.status( HttpStatus.SERVICE_UNAVAILABLE ).build();
+        }
+
+        log.error( "Unhandled exception", ex );
+
+        // Headers are already on the wire - an error body cannot replace what the client
+        // has, and trying to serialise one into the streaming Content-Type only throws again.
+        if ( response.isCommitted() )
+            return null;
+
+        return builderResponse( 
                 "Internal server error",
                 HttpStatus.INTERNAL_SERVER_ERROR
             );
@@ -196,6 +229,7 @@ public class GlobalExceptionHandler {
     
             return ResponseEntity
                 .status( status.value() )
+                .contentType( MediaType.APPLICATION_JSON )
                 .body( response );
     }
 }

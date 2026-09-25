@@ -19,6 +19,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.client.RestClient;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.web.client.RestClientException;
+import org.springframework.web.util.HtmlUtils;
 
 import com.filmexa.stream.modules.torrent.dto.TorrentResultDto;
 import com.filmexa.stream.modules.torrent.dto.piratebay.PirateBayResponseDto;

@@ -45,9 +45,10 @@ public class StreamController {
     /** Starts playback: probes the movie if needed, returns the manifest URL and token. */
     @PostMapping("/session")
     public ResponseEntity<StreamSessionDto> createSession(@PathVariable Long movieId,
+                                                          @RequestParam String imdbId,
                                                           Authentication authentication) {
         return ResponseEntity.ok(
-                streamService.createSession(movieId, (User) authentication.getPrincipal()));
+                streamService.createSession(movieId, imdbId, (User) authentication.getPrincipal()));
     }
 
     @GetMapping("/master.m3u8")

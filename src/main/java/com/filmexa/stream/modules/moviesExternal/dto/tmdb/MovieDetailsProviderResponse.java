@@ -29,4 +29,5 @@ public class MovieDetailsProviderResponse {
     String  overview;
     Double  vote_average;
     List<Integer> genre_ids;
+    boolean adult;
 }

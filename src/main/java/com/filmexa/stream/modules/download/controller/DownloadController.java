@@ -35,4 +35,10 @@ public class DownloadController {
         }
         return ResponseEntity.ok(progress);
     }
+
+    @PostMapping("/{movieId}/stop")
+    public ResponseEntity<Void> stopDownload(@PathVariable Long movieId) {
+        torrentDownloadService.stopDownload(movieId);
+        return ResponseEntity.ok().build();
+    }
 }

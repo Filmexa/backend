@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   MovieController.java                               :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: maddou <maddou@student.42.fr>              +#+  +:+       +#+        */
+/*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/13 10:27:27 by maddou            #+#    #+#             */
-/*   Updated: 2026/09/23 19:55:37 by maddou           ###   ########.fr       */
+/*   Updated: 2026/09/25 16:10:27 by kchaouki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,7 +18,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.data.domain.Pageable;
-import org.springframework.beans.factory.annotation.Qualifier;
 
 import org.springframework.validation.annotation.Validated;
 import jakarta.validation.constraints.Positive;
@@ -32,16 +31,12 @@ import com.filmexa.stream.modules.moviesExternal.dto.response.TrendingMoviesResp
 import com.filmexa.stream.modules.moviesExternal.dto.response.MovieResponse;
 import com.filmexa.stream.modules.moviesExternal.dto.response.MovieDetailsResponse;
 import com.filmexa.stream.modules.moviesExternal.dto.response.MoviePageResponse;
-import com.filmexa.stream.modules.torrent.dto.TorrentResultDto;
 
-// # you must deleted
-import com.filmexa.stream.modules.torrent.service.TorrentService;
 
 import jakarta.validation.Valid;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 @Tag(
     name = "Movies",

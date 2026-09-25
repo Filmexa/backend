@@ -33,6 +33,16 @@ public class StreamSessionDto {
     private String token;
     private long expiresInSeconds;
     private double durationSeconds;
+
+    /**
+     * How much of the film is guaranteed playable right now, in seconds from the start:
+     * draw it as the available range on the scrub bar. Seeking past it is allowed and
+     * expected - the download jumps to wherever the viewer lands, so a 503 on a segment
+     * means "buffering", not an error. A region fetched by an earlier seek can be
+     * playable without being counted here, since this is the run that starts at 0.
+     */
+    private double playableSeconds;
+
     private List<VariantDto> variants;
     private List<SubtitleTrackDto> subtitles;
 }

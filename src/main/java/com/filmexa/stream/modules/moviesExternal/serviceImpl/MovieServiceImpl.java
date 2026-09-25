@@ -6,7 +6,7 @@
 /*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/14 12:33:45 by maddou            #+#    #+#             */
-/*   Updated: 2026/09/25 18:55:18 by marouan          ###   ########.fr       */
+/*   Updated: 2026/09/25 21:45:50 by marouan          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -63,6 +63,7 @@ public class MovieServiceImpl implements MovieService {
 
         List< MovieDetailsProviderResponse > providerMovies = movieProvider.getTrendingMovies( language );
         return providerMovies.stream()
+        .filter(movie -> !movie.isAdult())
         .limit(10)
         .map(movie -> new TrendingMoviesResponse(
             movie.getId(),
@@ -86,32 +87,38 @@ public class MovieServiceImpl implements MovieService {
         // get top rated
         List< MovieResponse > topRated = movieProvider.getTopRatedMovies( language )
             .stream()
+            .filter(movie -> !movie.isAdult())
             .map( movie -> this.movieMapper.toMovieResponse( movie ) )
             .toList();
         
         // get movies by genre
         List< MovieResponse > action = movieProvider.getMoviesByGenre( language, 28L )
             .stream()
+            .filter(movie -> !movie.isAdult())
             .map( movie -> this.movieMapper.toMovieResponse( movie ) )
             .toList();
         
         List< MovieResponse > comedy = movieProvider.getMoviesByGenre( language, 35L )
             .stream()
+            .filter(movie -> !movie.isAdult())
             .map( movie -> this.movieMapper.toMovieResponse( movie ) )
             .toList();
         
         List< MovieResponse > horror = movieProvider.getMoviesByGenre( language, 27L )
             .stream()
+            .filter(movie -> !movie.isAdult())
             .map( movie -> this.movieMapper.toMovieResponse( movie ) )
             .toList();
         
         List< MovieResponse > drama = movieProvider.getMoviesByGenre( language, 18L )
             .stream()
+            .filter(movie -> !movie.isAdult())
             .map( movie -> this.movieMapper.toMovieResponse( movie ) )
             .toList();
         
         List< MovieResponse > romance = movieProvider.getMoviesByGenre( language, 10749L )
             .stream()
+            .filter(movie -> !movie.isAdult())
             .map( movie -> this.movieMapper.toMovieResponse( movie ) )
             .toList();
         return this.generateHomeMoviesData(
@@ -128,6 +135,7 @@ public class MovieServiceImpl implements MovieService {
     public List<MovieResponse> getMoviesByGenre( String language, Long id ) {
         List< MovieResponse > movies = movieProvider.getMoviesByGenre( language, id )
             .stream()
+            .filter(movie -> !movie.isAdult())
             .map( movie -> this.movieMapper.toMovieResponse( movie ) )
             .toList();
         return movies;
@@ -155,6 +163,7 @@ public class MovieServiceImpl implements MovieService {
             10000,
             providerResult.getResults()
                 .stream()
+                .filter(movie -> !movie.isAdult())
                 .map( movie -> this.movieMapper.toMovieResponse( movie ) )
                 .toList()
         );
@@ -191,6 +200,7 @@ public class MovieServiceImpl implements MovieService {
                 movies.getResults().size(),
                 movies.getResults()
                     .stream()
+                    .filter(movie -> !movie.isAdult())
                     .map( movie -> this.movieMapper.toMovieResponse( movie ) )
                     .toList()
             );
@@ -219,7 +229,7 @@ public class MovieServiceImpl implements MovieService {
         // convert to application actors and limited to 10
         List< ActorResponse > actors =   movieDetails.getCredits().getCast()
             .stream()
-            .limit(10)
+            .limit(20)
             .map( movie -> new ActorResponse(
                 movie.getId(),
                 movie.getName(),
@@ -297,6 +307,7 @@ public class MovieServiceImpl implements MovieService {
         
         List<MovieDetailsProviderData> filteredMovies = movies
             .stream()
+            .filter(movie -> !movie.isAdult())
             .filter(movie -> query.getGenreId() == null
                     || query.getGenreId().equals(100)
                     || movie.getGenreIds() != null

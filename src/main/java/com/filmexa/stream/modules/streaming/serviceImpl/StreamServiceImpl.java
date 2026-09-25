@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -27,9 +28,9 @@ import com.filmexa.stream.modules.download.entity.MovieDownload;
 import com.filmexa.stream.modules.download.enums.DownloadStatus;
 import com.filmexa.stream.modules.download.repo.MovieDownloadRepository;
 import com.filmexa.stream.modules.download.dto.DownloadRequestDto;
-import com.filmexa.stream.modules.download.magnet.MagnetResolver;
 import com.filmexa.stream.modules.download.service.TorrentDownloadService;
 import com.filmexa.stream.modules.streaming.config.StreamProperties;
+import com.filmexa.stream.modules.streaming.dto.AudioTrack;
 import com.filmexa.stream.modules.streaming.dto.MediaInfo;
 import com.filmexa.stream.modules.streaming.dto.StreamSessionDto;
 import com.filmexa.stream.modules.streaming.dto.SubtitleTrack;
@@ -43,8 +44,12 @@ import com.filmexa.stream.modules.streaming.playlist.PlaylistBuilder;
 import com.filmexa.stream.modules.streaming.security.StreamTokenService;
 import com.filmexa.stream.modules.streaming.service.StreamService;
 import com.filmexa.stream.modules.streaming.util.Languages;
+import com.filmexa.stream.modules.moviesExternal.client.MovieProvider;
+import com.filmexa.stream.modules.moviesExternal.dto.tmdb.MovieProvederData;
+import com.filmexa.stream.modules.torrent.service.TorrentService;
 import com.filmexa.stream.modules.users.entity.User;
 import com.filmexa.stream.modules.users.enums.PreferredLanguage;
+import com.filmexa.stream.modules.torrent.dto.TorrentResultDto;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -54,8 +59,24 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class StreamServiceImpl implements StreamService {
 
+    /**
+     * How much of a torrent's total has to be on disk before a COMPLETED download is
+     * taken at its word. The video file is always a little smaller than the torrent.
+     */
+    private static final double COMPLETE_FILE_RATIO = 0.95;
+
     private static final Set<String> VIDEO_EXTENSIONS =
             Set.of("mp4", "mkv", "avi", "mov", "m4v", "webm", "wmv", "flv", "mpg", "mpeg", "ts");
+
+    /**
+     * Subtitles are offered in English, French and Arabic only. Deriving the set from
+     * PreferredLanguage rather than listing the codes again keeps the menu in step with
+     * the languages a viewer can actually choose, so the two cannot drift apart.
+     */
+    private static final Set<String> OFFERED_SUBTITLE_LANGUAGES =
+            Stream.of(PreferredLanguage.values())
+                    .map(PreferredLanguage::getDisplayName)
+                    .collect(Collectors.toUnmodifiableSet());
 
     private final Ffmpeg ffmpeg;
     private final PlaylistBuilder playlistBuilder;
@@ -63,16 +84,20 @@ public class StreamServiceImpl implements StreamService {
     private final StreamProperties properties;
     private final TorrentDownloadService torrentDownloadService;
     private final MovieDownloadRepository movieDownloadRepository;
-    private final MagnetResolver magnetResolver;
+    private final TorrentService torrentService;
+    private final MovieProvider movieProvider;
 
     @Value("${app.video-storage-path:./data/movies}")
     private String videoStoragePath;
 
     private final Map<Long, MediaInfo> probes = new ConcurrentHashMap<>();
 
+    /** TMDB's original_language per movie. One lookup per movie, then served from memory. */
+    private final Map<Long, String> originalLanguages = new ConcurrentHashMap<>();
+
     @Override
-    public StreamSessionDto createSession(Long movieId, User viewer) {
-        MovieDownload download = ensureDownloadStarted(movieId);
+    public StreamSessionDto createSession(Long movieId, String imdbId, User viewer) {
+        MovieDownload download = ensureDownloadStarted(movieId, imdbId);
 
         MediaInfo info;
         try {
@@ -97,6 +122,7 @@ public class StreamServiceImpl implements StreamService {
                 .token(token)
                 .expiresInSeconds(streamTokenService.getTtlSeconds())
                 .durationSeconds(info.durationSeconds())
+                .playableSeconds(playableSeconds(movieId, info))
                 .variants(variantsFor(movieId, info, token))
                 .subtitles(subtitlesFor(movieId, info, token, viewer))
                 .build();
@@ -106,15 +132,22 @@ public class StreamServiceImpl implements StreamService {
      * Makes sure a download exists and is running for this movie, resolving a magnet the
      * first time. The frontend never supplies the magnet - it only knows the movie id.
      */
-    private MovieDownload ensureDownloadStarted(Long movieId) {
+    private MovieDownload ensureDownloadStarted(Long movieId, String  imdbId) {
         Optional<MovieDownload> existing = movieDownloadRepository.findByMovieId(movieId);
 
         if (existing.isPresent()) {
             DownloadStatus status = existing.get().getStatus();
 
-            // Already on disk - nothing to do.
-            if (status == DownloadStatus.COMPLETED) {
+            // Already on disk - nothing to do, as long as it really is all there. A
+            // COMPLETED row over a part-downloaded file is a dead end otherwise: this
+            // early return is what stops the download ever being picked up again.
+            if (status == DownloadStatus.COMPLETED && isFileComplete(existing.get())) {
                 return existing.get();
+            }
+
+            if (status == DownloadStatus.COMPLETED) {
+                log.warn("Movie {} is marked COMPLETED but the file on disk is short,"
+                        + " downloading the rest", movieId);
             }
 
             // Anything else needs a live torrent client. A row can say DOWNLOADING while
@@ -129,11 +162,18 @@ public class StreamServiceImpl implements StreamService {
                     movieId, status);
         }
 
-        DownloadRequestDto request = new DownloadRequestDto();
-        request.setMovieId(movieId);
-        request.setMagnetUrl(magnetResolver.resolve(movieId));
+        Optional<TorrentResultDto> torrent = torrentService.resolve(imdbId);
 
-        return torrentDownloadService.startDownload(request);
+        if (torrent.isPresent()) {
+            // Mohssin part (Download)
+            DownloadRequestDto request = new DownloadRequestDto();
+            request.setMovieId(movieId);
+            System.out.println("Magnet URL: " + torrent.get().getMagnet());
+            request.setMagnetUrl(torrent.get().getMagnet());
+            return torrentDownloadService.startDownload(request);
+        }
+        // No provider carries this film - that is a 404 for the caller, not a server fault.
+        throw new NotFoundException("No torrent available for movie " + movieId);
     }
 
     private StreamSessionDto preparing(Long movieId, MovieDownload download) {
@@ -174,7 +214,8 @@ public class StreamServiceImpl implements StreamService {
     @Override
     public String mediaPlaylist(Long movieId, int height, String token) {
         MediaInfo info = mediaInfo(movieId);
-        return playlistBuilder.media(info, resolveRung(info, height), token);
+        resolveRung(info, height);
+        return playlistBuilder.media(info, token);
     }
 
     @Override
@@ -187,12 +228,13 @@ public class StreamServiceImpl implements StreamService {
         }
 
         requireDownloaded(movieId, info, segmentIndex);
-        return new Segment(info, resolution, segmentIndex);
+        return new Segment(info, resolution, segmentIndex, originalAudioIndex(movieId, info));
     }
 
     @Override
     public byte[] segmentBytes(Segment segment) {
-        return ffmpeg.encodeSegment(segment.info(), segment.resolution(), segment.index());
+        return ffmpeg.encodeSegment(segment.info(), segment.resolution(), segment.index(),
+                segment.audioTrackIndex());
     }
 
     @Override
@@ -202,6 +244,7 @@ public class StreamServiceImpl implements StreamService {
         SubtitleTrack track = info.subtitles().stream()
                 .filter(candidate -> candidate.index() == trackIndex)
                 .filter(SubtitleTrack::convertible)
+                .filter(this::offered)
                 .findFirst()
                 .orElseThrow(() -> new NotFoundException(
                         "No convertible subtitle track " + trackIndex + " for movie " + movieId));
@@ -247,10 +290,11 @@ public class StreamServiceImpl implements StreamService {
     /**
      * Builds the subtitle menu for one viewer.
      *
-     * <p>Every convertible track is offered, so anything in the file stays selectable. On
-     * top of that the subject asks for a track to be *active* when the viewer would not
-     * understand the audio: if the movie's audio language differs from their preferred
-     * language, the matching subtitle is marked as the default, falling back to English.
+     * <p>Every convertible track in an offered language is listed, so anything the viewer
+     * could read stays selectable. On top of that the subject asks for a track to be
+     * *active* when the viewer would not understand the audio: if the movie's audio
+     * language differs from their preferred language, the matching subtitle is marked as
+     * the default, falling back to English.
      * When the audio is already in their language nothing is auto-enabled.
      *
      * <p>The list is ordered preferred-language first, then English, so the browser's own
@@ -258,11 +302,12 @@ public class StreamServiceImpl implements StreamService {
      */
     private List<SubtitleTrackDto> subtitlesFor(Long movieId, MediaInfo info, String token, User viewer) {
         String preferred = preferredLanguageOf(viewer);
-        String audio = Languages.toBcp47(info.audioLanguage());
+        String audio = Languages.toBcp47(playedAudioTrack(movieId, info).language());
         boolean viewerUnderstandsAudio = preferred.equals(audio);
 
         List<SubtitleTrack> usable = new ArrayList<>(info.subtitles().stream()
                 .filter(SubtitleTrack::convertible)
+                .filter(this::offered)
                 .toList());
 
         usable.sort(Comparator
@@ -282,6 +327,66 @@ public class StreamServiceImpl implements StreamService {
                 .toList();
     }
 
+    /**
+     * The audio stream to play: the one in the film's original language.
+     *
+     * <p>A release commonly muxes a dub ahead of the original, so the first stream is not a
+     * safe default. TMDB knows what the film was shot in, which is the only reliable
+     * signal - the file's own tags say what each track is, never which is the original.
+     *
+     * <p>Falls back to the first track when TMDB has no answer or the file carries nothing
+     * in that language, which is also the right answer for a single-audio release.
+     */
+    private AudioTrack playedAudioTrack(Long movieId, MediaInfo info) {
+        if (info.audioTracks().isEmpty()) {
+            return new AudioTrack(0, "und", null);
+        }
+        AudioTrack first = info.audioTracks().get(0);
+
+        String original = originalLanguageOf(movieId);
+        if (original == null || original.isBlank()) {
+            return first;
+        }
+
+        return info.audioTracks().stream()
+                .filter(track -> Languages.toBcp47(track.language()).equals(original))
+                .findFirst()
+                .orElse(first);
+    }
+
+    private int originalAudioIndex(Long movieId, MediaInfo info) {
+        return playedAudioTrack(movieId, info).index();
+    }
+
+    /**
+     * TMDB's original_language for this movie, or null when it cannot be reached. A failure
+     * here must not stop playback, so it degrades to "use the first audio track".
+     */
+    private String originalLanguageOf(Long movieId) {
+        String cached = originalLanguages.get(movieId);
+        if (cached != null) {
+            return cached;
+        }
+
+        String language;
+        try {
+            MovieProvederData movie = movieProvider.getMovieById("en-US", movieId.intValue());
+            language = movie == null ? null : movie.getOriginal_language();
+        } catch (RuntimeException e) {
+            log.warn("Could not read original language for movie {}: {}", movieId, e.getMessage());
+            return null;
+        }
+
+        if (language == null || language.isBlank()) {
+            return null;
+        }
+        // Only a real answer is cached: caching the failure would pin this movie to the
+        // wrong audio track until the next restart, for what may be a passing outage.
+        String normalised = language.trim().toLowerCase(Locale.ROOT);
+        originalLanguages.put(movieId, normalised);
+        return normalised;
+    }
+
     /** The viewer's language, or English when they have not set one. */
     private String preferredLanguageOf(User viewer) {
         PreferredLanguage preference = viewer == null ? null : viewer.getPreferredLanguage();
@@ -295,6 +400,19 @@ public class StreamServiceImpl implements StreamService {
                 .findFirst()
                 .or(() -> usable.stream().filter(track -> matches(track, "en")).findFirst())
                 .orElse(null);
+    }
+
+    /**
+     * Whether a track belongs in the menu at all.
+     *
+     * <p>Excluded: languages we do not offer, untagged tracks, forced tracks - which only
+     * cover signs and foreign dialogue, so they look like a broken full subtitle - and SDH,
+     * whose sound-effect and speaker annotations are noise to a viewer who can hear.
+     */
+    private boolean offered(SubtitleTrack track) {
+        return OFFERED_SUBTITLE_LANGUAGES.contains(Languages.toBcp47(track.language()))
+                && !track.forced()
+                && !track.hearingImpaired();
     }
 
     private boolean matches(SubtitleTrack track, String bcp47) {
@@ -338,9 +456,32 @@ public class StreamServiceImpl implements StreamService {
     private void requireDownloaded(Long movieId, MediaInfo info, int segmentIndex) {
         double segmentEnd = (double) (segmentIndex + 1) * properties.getSegmentSeconds();
         double required = Math.min(segmentEnd + properties.getReadaheadSeconds(), info.durationSeconds());
+        double segmentStart = (double) segmentIndex * properties.getSegmentSeconds();
+
+        // Ask the torrent which pieces it actually holds. After a seek the data is no
+        // longer one run from the start, so a "bytes downloaded" estimate would keep
+        // refusing the very segments the seek just fetched.
+        if (info.durationSeconds() > 0) {
+            Optional<Boolean> downloaded = torrentDownloadService.isRangeDownloaded(movieId,
+                    segmentStart / info.durationSeconds(), required / info.durationSeconds());
+
+            if (downloaded.isPresent()) {
+                if (downloaded.get()) {
+                    return;
+                }
+                requestSeek(movieId, info, segmentStart);
+                log.debug("Segment {} of movie {} is not on disk yet", segmentIndex, movieId);
+                throw new StreamNotReadyException(
+                        "Segment " + segmentIndex + " has not been downloaded yet", 5);
+            }
+        }
+
+        // Nothing running to ask - fall back to how much of the file is on disk, which is
+        // a prefix as long as no seek has happened.
         double playable = playableSeconds(movieId, info);
 
         if (playable + 0.001 < required) {
+            requestSeek(movieId, info, segmentStart);
             log.debug("Segment {} of movie {} needs {}s downloaded, have {}s",
                     segmentIndex, movieId, (long) required, (long) playable);
             throw new StreamNotReadyException(
@@ -349,18 +490,51 @@ public class StreamServiceImpl implements StreamService {
     }
 
     /** How many seconds from the start of the movie are estimated to be on disk. */
+    /**
+     * Moves the download to what the viewer is trying to watch, rather than making them
+     * wait for everything in between - ten minutes of film is a few hundred MB, not the
+     * remaining hour of the torrent. Time maps onto bytes only roughly for variable
+     * bitrate video, so aim a segment early and let the sequential order carry on.
+     */
+    private void requestSeek(Long movieId, MediaInfo info, double segmentStart) {
+        if (info.durationSeconds() <= 0) {
+            return;
+        }
+        double target = Math.max(0, segmentStart - properties.getSegmentSeconds());
+        torrentDownloadService.seek(movieId, target / info.durationSeconds());
+    }
+
     private double playableSeconds(Long movieId, MediaInfo info) {
         DownloadProgressDto progress = torrentDownloadService.getProgress(movieId);
 
         // No download record at all means the file is simply sitting on disk.
-        if (progress == null || progress.getStatus() == DownloadStatus.COMPLETED) {
+        if (progress == null) {
             return info.durationSeconds();
         }
-        if (progress.getTotalBytes() <= 0) {
-            return 0;
+
+        long totalBytes = progress.getTotalBytes();
+
+        // The size of the file is the one number that cannot go stale: pieces arrive in
+        // order, so the file grows as they land. A status of COMPLETED on a row whose
+        // download really stopped a third of the way through is what let the player ask
+        // for a segment two hours past the last byte on disk and 503 forever.
+        long available = Math.max(progress.getDownloadedBytes(), sizeOf(info.file()));
+
+        if (totalBytes <= 0) {
+            return progress.getStatus() == DownloadStatus.COMPLETED ? info.durationSeconds() : 0;
         }
 
-        double ratio = (double) progress.getDownloadedBytes() / progress.getTotalBytes();
+        if (progress.getStatus() == DownloadStatus.COMPLETED) {
+            // The torrent's total covers every file in it - samples, nfo - so the video
+            // alone lands a little short of it even when the download really did finish.
+            if (available >= totalBytes * COMPLETE_FILE_RATIO) {
+                return info.durationSeconds();
+            }
+            log.warn("Movie {} is marked COMPLETED but only {} of {} bytes are on disk;"
+                    + " serving what is actually there", movieId, available, totalBytes);
+        }
+
+        double ratio = (double) available / totalBytes;
         return Math.min(1.0, ratio) * info.durationSeconds();
     }
 
@@ -368,6 +542,19 @@ public class StreamServiceImpl implements StreamService {
      * Finds the movie file. The download worker records its relative path once the torrent
      * metadata resolves; otherwise we fall back to the largest video file in the folder.
      */
+    /** Whether the video file on disk accounts for the torrent this row recorded. */
+    private boolean isFileComplete(MovieDownload download) {
+        long totalBytes = download.getTotalBytes();
+        if (totalBytes <= 0) {
+            // Nothing to compare against - rows written before the counters were
+            // persisted have no total, so the file has to be taken as it is.
+            return true;
+        }
+        return locate(download.getMovieId())
+                .map(this::sizeOf)
+                .orElse(0L) >= totalBytes * COMPLETE_FILE_RATIO;
+    }
+
     private Optional<Path> locate(Long movieId) {
         Path directory = Paths.get(videoStoragePath, movieId.toString()).toAbsolutePath();
 

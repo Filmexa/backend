@@ -6,7 +6,7 @@
 /*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/20 17:48:28 by marouan           #+#    #+#             */
-/*   Updated: 2026/09/25 21:14:13 by marouan          ###   ########.fr       */
+/*   Updated: 2026/09/25 22:03:31 by marouan          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,12 +21,16 @@ import org.springframework.web.client.RestClientException;
 import com.filmexa.stream.common.exception.NotFoundException;
 
 // import com.filmexa.stream.modules.torrent.dto.TorrentProviderResponseData;
+import com.filmexa.stream.modules.torrent.dto.yts.Movie;
 import com.filmexa.stream.modules.torrent.dto.yts.YtsResponseDto;
 import com.filmexa.stream.modules.torrent.dto.yts.YtsTorrentDto;
 import com.filmexa.stream.modules.torrent.dto.TorrentResultDto;
 import com.filmexa.stream.common.exception.ExternalServiceException;
 
+import lombok.extern.slf4j.Slf4j;
+
 @Component("ytsClient")
+@Slf4j
 public class YtsClient implements TorrentClient {
 
     private final RestClient restClient;
@@ -45,13 +49,19 @@ public class YtsClient implements TorrentClient {
                 .body( YtsResponseDto.class );
             if (response == null
                 || response.getData() == null
-                || response.getData().getMovie() == null ) {
+                || response.getData().getMovie() == null) {
                     return List.of();
+                    // throw new ExternalServiceException(
+                    //     "External service is unavailable"
+                    // );
             }
+            // if (response.getData().getMovie().getTorrents() == null) {
+            //     throw new NotFoundException("No torrents found for this movie");
+            // }
             Integer id = response.getData().getMovie().getId();
             List<YtsTorrentDto> dataYts =  response.getData().getMovie().getTorrents();
-            if ( dataYts == null ) return List.of();
-            // map yts response to common client data
+            if ( dataYts == null ) throw new NotFoundException("not found");
+                // map yts response to common client data
             return dataYts.stream()
                 .map( torrent -> new TorrentResultDto(
                     id,
