@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   MovieServiceImpl.java                              :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: kchaouki <kchaouki@student.1337.ma>        +#+  +:+       +#+        */
+/*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/14 12:33:45 by maddou            #+#    #+#             */
-/*   Updated: 2026/09/25 16:10:33 by kchaouki         ###   ########.fr       */
+/*   Updated: 2026/09/25 21:45:50 by marouan          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -193,7 +193,6 @@ public class MovieServiceImpl implements MovieService {
                 query.getGenreId() != null && query.getGenreId() == 100 ? mapSort( MovieSort.RATING ) : mapSort( query.getSortBy() ),
                 pageNumber
             );
-            System.out.println(providerRequest);
             TmdbMoviesPageableResponse movies = movieProvider.discoverMovies( providerRequest );
             return new MoviePageResponse(
                 movies.getPage(),

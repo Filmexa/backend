@@ -209,6 +209,15 @@ public class GlobalExceptionHandler {
             );
     }
     
+    @ExceptionHandler(ExternalServiceException.class)
+    public ResponseEntity<ErrorResponse> handleExternalService(
+            ExternalServiceException ex ) {
+        return builderResponse( 
+            ex.getMessage(),
+            HttpStatus.SERVICE_UNAVAILABLE
+        );
+    }
+
     private ResponseEntity<ErrorResponse> builderResponse( 
         String message,
         HttpStatus status
