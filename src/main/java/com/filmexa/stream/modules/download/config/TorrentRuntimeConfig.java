@@ -40,6 +40,13 @@ public class TorrentRuntimeConfig {
         Config config = new Config();
         config.setAcceptorPort(acceptorPort);
 
+        try (java.net.DatagramSocket socket = new java.net.DatagramSocket()) {
+            socket.connect(java.net.InetAddress.getByName("8.8.8.8"), 10002);
+            config.setAcceptorAddress(socket.getLocalAddress());
+        } catch (Exception e) {
+            log.warn("Could not determine outbound network interface: {}", e.getMessage());
+        }
+
         runtime = BtRuntime.builder(config)
             .module(new DHTModule(dhtConfig))
             .autoLoadModules()

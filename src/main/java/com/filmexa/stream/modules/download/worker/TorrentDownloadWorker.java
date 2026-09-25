@@ -22,6 +22,9 @@ import java.nio.file.Paths;
 import java.util.Map;
 import com.filmexa.stream.modules.download.enums.DownloadStatus;
 import java.time.LocalDateTime;
+import bt.runtime.Config;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
 
 @Component
 @Slf4j
@@ -114,7 +117,7 @@ public class TorrentDownloadWorker {
 
                     // 3. 42 Rule: Check if 10 MB buffer reached
                     boolean streamReady = false;
-                    if (downloaded >= 10 * 1024 * 1024) {
+                    if (downloaded >= 25 * 1024 * 1024) {
                         streamReady = true;
                     }
 
@@ -150,6 +153,11 @@ public class TorrentDownloadWorker {
                         .downloadSpeedBps(speed)
                         .isReadyToStream(streamReady)
                         .build());
+
+                    if (speed > 0) {
+                        log.info("Movie {}: Progress = {}% | Speed = {} KB/s", 
+                                movieId, String.format("%.2f", progress), speed / 1024);
+                    }
                 }, 1000);
 
             // Wait here on the worker thread until download completes or is stopped
@@ -171,6 +179,16 @@ public class TorrentDownloadWorker {
                 activeClients.remove(movieId);
                 progressCache.remove(movieId);
             });
+        }
+    }
+
+    private InetAddress getOutboundAddress() {
+        try (DatagramSocket socket = new DatagramSocket()) {
+            socket.connect(InetAddress.getByName("8.8.8.8"), 10002);
+            return socket.getLocalAddress();
+        } catch (Exception e) {
+            log.warn("Could not determine outbound network interface: {}", e.getMessage());
+            return null;
         }
     }
 }

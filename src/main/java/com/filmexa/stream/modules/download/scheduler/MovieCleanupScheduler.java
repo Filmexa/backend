@@ -22,11 +22,6 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * Deletes movies nobody has watched for a month.
- *
- * <p>Everything for a movie lives under one directory - the downloaded file, the extracted
- * subtitles - so cleanup is "stop the torrent, remove the folder, drop the row".
- * {@code lastWatchedAt} is refreshed every time a play session or a manifest is requested,
- * so a movie being watched right now can never look stale.
  */
 @Component
 @RequiredArgsConstructor
@@ -61,17 +56,11 @@ public class MovieCleanupScheduler {
     private void remove(MovieDownload download) {
         Long movieId = download.getMovieId();
         try {
-            // A download can still be running if nobody ever came back to watch it.
-            // Stop it first, or the torrent client keeps writing into the folder we
-            // are about to delete.
             torrentDownloadService.stopDownload(movieId);
-
             deleteDirectory(Paths.get(videoStoragePath, String.valueOf(movieId)).toAbsolutePath());
             movieDownloadRepository.delete(download);
-
             log.info("Cleanup: removed movie {} (last watched {})", movieId, download.getLastWatchedAt());
         } catch (Exception e) {
-            // One bad movie must not stop the rest of the sweep.
             log.error("Cleanup: could not remove movie {}", movieId, e);
         }
     }
@@ -81,7 +70,6 @@ public class MovieCleanupScheduler {
             return;
         }
         try (Stream<Path> walk = Files.walk(directory)) {
-            // Deepest first, so directories are empty by the time we reach them.
             walk.sorted(Comparator.reverseOrder()).forEach(path -> {
                 try {
                     Files.deleteIfExists(path);
