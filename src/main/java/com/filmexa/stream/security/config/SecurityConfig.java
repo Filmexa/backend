@@ -6,7 +6,7 @@
 /*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/08 18:34:10 by kchaouki          #+#    #+#             */
-/*   Updated: 2026/09/25 20:40:37 by marouan          ###   ########.fr       */
+/*   Updated: 2026/09/25 21:21:58 by marouan          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -65,8 +65,7 @@ public class SecurityConfig {
 			"/api/auth/google",
 			"/api/auth/google/callback",
 			"/api/auth/facebook",
-			"/api/auth/facebook/callback",
-			"/api/movies/**"
+			"/api/auth/facebook/callback"
 	};
 
 	private final UserDetailsService userDetailsService;
