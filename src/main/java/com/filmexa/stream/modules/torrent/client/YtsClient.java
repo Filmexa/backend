@@ -6,7 +6,7 @@
 /*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/20 17:48:28 by marouan           #+#    #+#             */
-/*   Updated: 2026/09/25 20:56:12 by marouan          ###   ########.fr       */
+/*   Updated: 2026/09/25 21:14:13 by marouan          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,6 +18,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
+import com.filmexa.stream.common.exception.NotFoundException;
 
 // import com.filmexa.stream.modules.torrent.dto.TorrentProviderResponseData;
 import com.filmexa.stream.modules.torrent.dto.yts.YtsResponseDto;
@@ -44,13 +45,12 @@ public class YtsClient implements TorrentClient {
                 .body( YtsResponseDto.class );
             if (response == null
                 || response.getData() == null
-                || response.getData().getMovie() == null) {
-                    throw new ExternalServiceException(
-                        "External service is unavailable"
-                    );
+                || response.getData().getMovie() == null ) {
+                    return List.of();
             }
             Integer id = response.getData().getMovie().getId();
             List<YtsTorrentDto> dataYts =  response.getData().getMovie().getTorrents();
+            if ( dataYts == null ) return List.of();
             // map yts response to common client data
             return dataYts.stream()
                 .map( torrent -> new TorrentResultDto(

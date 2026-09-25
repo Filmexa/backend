@@ -44,7 +44,6 @@ public class PirateBayClient implements TorrentClient{
                 .uri("?q={imdbId}", imdbId )
                 .retrieve()
                 .body( new ParameterizedTypeReference<List<PirateBayResponseDto>>() {} );
-            System.out.println( response );
             if ( response == null ) {
                 return List.of();
             }
