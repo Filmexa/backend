@@ -209,8 +209,8 @@ public class Ffmpeg {
             errThread.join(5000);
 
             if (process.exitValue() != 0) {
-                throw new IllegalStateException("ffmpeg failed on segment " + segmentIndex
-                        + ": " + errors.toString().trim());
+                log.warn("ffmpeg failed on segment {}: {}", segmentIndex, errors.toString().trim());
+                throw new StreamNotReadyException("Segment " + segmentIndex + " is buffering", 2);
             }
 
             // Asked to seek past the end of the data actually on disk, ffmpeg exits 0 and

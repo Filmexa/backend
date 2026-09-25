@@ -11,6 +11,9 @@ public interface TorrentDownloadService {
 
     MovieDownload startDownload(DownloadRequestDto request);
 
+    /** Restarts an existing download that the caller has determined is stale or incomplete. */
+    MovieDownload restartDownload(DownloadRequestDto request);
+
     DownloadProgressDto getProgress(Long movieId);
 
     void stopDownload(Long movieId);

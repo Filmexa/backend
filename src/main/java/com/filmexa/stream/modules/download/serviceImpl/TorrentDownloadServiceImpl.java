@@ -38,16 +38,17 @@ public class TorrentDownloadServiceImpl implements TorrentDownloadService {
             MovieDownload download = existing.get();
             DownloadStatus status = download.getStatus();
 
-            // If already downloading or finished, return it immediately
-            if (status == DownloadStatus.DOWNLOADING 
-                || status == DownloadStatus.READY_TO_STREAM 
-                || status == DownloadStatus.COMPLETED) {
+            // The database status survives a server restart, but the worker does not.
+            // Only a live worker proves that a DOWNLOADING/READY_TO_STREAM row is active.
+            if (torrentDownloadWorker.isActive(movieId) || status == DownloadStatus.COMPLETED) {
                 log.info("Movie {} is already in status: {}", movieId, status);
                 return download;
             }
 
-            // If it was PAUSED or FAILED, resume it!
+            // PENDING, PAUSED, FAILED, and stale DOWNLOADING/READY_TO_STREAM rows all
+            // need a worker in this process.
             download.setStatus(DownloadStatus.PENDING);
+            download.setReadyToStream(false);
             download.setLastWatchedAt(LocalDateTime.now());
             movieDownloadRepository.save(download);
 
@@ -67,6 +68,34 @@ public class TorrentDownloadServiceImpl implements TorrentDownloadService {
         // 3. Launch background download!
         torrentDownloadWorker.startDownloadAsync(movieId, magnetUrl);
 
+        return saved;
+    }
+
+    @Override
+    public MovieDownload restartDownload(DownloadRequestDto request) {
+        Long movieId = request.getMovieId();
+        String magnetUrl = request.getMagnetUrl();
+
+        Optional<MovieDownload> existing = movieDownloadRepository.findByMovieId(movieId);
+        if (existing.isEmpty()) {
+            return startDownload(request);
+        }
+
+        MovieDownload download = existing.get();
+        if (torrentDownloadWorker.isActive(movieId)) {
+            return download;
+        }
+
+        // StreamService calls this only after checking that a COMPLETED file is short,
+        // or that another persisted state has no live worker. Preserve the files and
+        // byte counters so the torrent client can resume from disk.
+        download.setMagnetUrl(magnetUrl);
+        download.setStatus(DownloadStatus.PENDING);
+        download.setReadyToStream(false);
+        download.setCompletedAt(null);
+        download.setLastWatchedAt(LocalDateTime.now());
+        MovieDownload saved = movieDownloadRepository.save(download);
+        torrentDownloadWorker.startDownloadAsync(movieId, magnetUrl);
         return saved;
     }
 

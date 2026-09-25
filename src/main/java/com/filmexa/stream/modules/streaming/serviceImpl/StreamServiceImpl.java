@@ -99,6 +99,18 @@ public class StreamServiceImpl implements StreamService {
     public StreamSessionDto createSession(Long movieId, String imdbId, User viewer) {
         MovieDownload download = ensureDownloadStarted(movieId, imdbId);
 
+        DownloadProgressDto progress = torrentDownloadService.getProgress(movieId);
+        if (progress != null && !progress.isReadyToStream()) {
+            return preparing(movieId, download);
+        }
+
+        if (torrentDownloadService.isActive(movieId)) {
+            Optional<Boolean> headerOnDisk = torrentDownloadService.isRangeDownloaded(movieId, 0.0, 0.001);
+            if (headerOnDisk.isPresent() && !headerOnDisk.get()) {
+                return preparing(movieId, download);
+            }
+        }
+
         MediaInfo info;
         try {
             info = mediaInfo(movieId);
@@ -108,16 +120,27 @@ public class StreamServiceImpl implements StreamService {
         } catch (StreamNotReadyException | NotFoundException notReadyYet) {
             log.debug("Movie {} not playable yet: {}", movieId, notReadyYet.getMessage());
             return preparing(movieId, download);
+        } catch (Exception e) {
+            log.warn("Probe or gate check exception for movie {}: {}", movieId, e.getMessage());
+            return preparing(movieId, download);
         }
 
         markWatched(movieId);
         String token = streamTokenService.issue(viewer.getUsername());
+
+        DownloadProgressDto progressDto = torrentDownloadService.getProgress(movieId);
+        Long downloaded = progressDto != null ? progressDto.getDownloadedBytes() : (download != null ? download.getDownloadedBytes() : 0L);
+        Long total = progressDto != null ? progressDto.getTotalBytes() : (download != null ? download.getTotalBytes() : 0L);
+        Double speed = progressDto != null ? progressDto.getDownloadSpeedBps() : 0.0;
 
         return StreamSessionDto.builder()
                 .movieId(movieId)
                 .state(StreamState.READY)
                 .downloadStatus(currentStatus(movieId, download))
                 .downloadProgressPercentage(currentProgress(movieId, download))
+                .downloadedBytes(downloaded)
+                .totalBytes(total)
+                .downloadSpeedBps(speed)
                 .manifestUrl(url(movieId, "master.m3u8", token))
                 .token(token)
                 .expiresInSeconds(streamTokenService.getTtlSeconds())
@@ -170,18 +193,28 @@ public class StreamServiceImpl implements StreamService {
             request.setMovieId(movieId);
             System.out.println("Magnet URL: " + torrent.get().getMagnet());
             request.setMagnetUrl(torrent.get().getMagnet());
-            return torrentDownloadService.startDownload(request);
+            return existing.isPresent()
+                    ? torrentDownloadService.restartDownload(request)
+                    : torrentDownloadService.startDownload(request);
         }
         // No provider carries this film - that is a 404 for the caller, not a server fault.
         throw new NotFoundException("No torrent available for movie " + movieId);
     }
 
     private StreamSessionDto preparing(Long movieId, MovieDownload download) {
+        DownloadProgressDto progress = torrentDownloadService.getProgress(movieId);
+        Long downloaded = progress != null ? progress.getDownloadedBytes() : (download != null ? download.getDownloadedBytes() : 0L);
+        Long total = progress != null ? progress.getTotalBytes() : (download != null ? download.getTotalBytes() : 0L);
+        Double speed = progress != null ? progress.getDownloadSpeedBps() : 0.0;
+
         return StreamSessionDto.builder()
                 .movieId(movieId)
                 .state(StreamState.PREPARING)
                 .downloadStatus(currentStatus(movieId, download))
                 .downloadProgressPercentage(currentProgress(movieId, download))
+                .downloadedBytes(downloaded)
+                .totalBytes(total)
+                .downloadSpeedBps(speed)
                 .build();
     }
 

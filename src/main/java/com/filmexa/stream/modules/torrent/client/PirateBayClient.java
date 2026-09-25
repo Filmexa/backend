@@ -48,7 +48,7 @@ public class PirateBayClient implements TorrentClient{
         }
 
         return response.stream()
-            .takeWhile(torrent -> torrent.getSeeders() > 1 )
+            .filter(torrent -> torrent.getSeeders() != null && torrent.getSeeders() > 0 )
             // The API hands back HTML-escaped names ("Minions &amp; Monsters"), which
             // would otherwise reach both the subtitle matcher and the magnet's dn.
             .peek( torrent -> torrent.setName( HtmlUtils.htmlUnescape( torrent.getName() ) ) )

@@ -27,6 +27,9 @@ public class StreamSessionDto {
 
     private DownloadStatus downloadStatus;
     private double downloadProgressPercentage;
+    private Long downloadedBytes;
+    private Long totalBytes;
+    private Double downloadSpeedBps;
 
     /** Set once READY: the HLS master playlist to hand to hls.js. */
     private String manifestUrl;

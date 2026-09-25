@@ -287,15 +287,16 @@ public class TorrentDownloadWorker {
                         progress = ((double) downloaded / total) * 100.0;
                     }
 
-                    // 3. 42 Rule: Check if 10 MB buffer reached
+                    // 3. 42 Rule: Check if buffer reached (8 MB AND Piece 0 complete, or complete file)
+                    boolean headerReady = isRangeDownloaded(movieId, 0.0, 0.001).orElse(false);
                     boolean streamReady = false;
-                    if (downloaded >= 25 * 1024 * 1024) {
+                    if ((downloaded >= 8 * 1024 * 1024 && headerReady) || (total > 0 && downloaded.equals(total))) {
                         streamReady = true;
                     }
 
                     if (streamReady && !readyToStreamMarked.get()) {
                         readyToStreamMarked.set(true);
-                        log.info("Movie {} reached 10 MB buffer! Ready to stream.", movieId);
+                        log.info("Movie {} reached 8 MB buffer! Ready to stream.", movieId);
 
                         movieDownloadRepository.findByMovieId(movieId).ifPresent(download -> {
                             download.setStatus(DownloadStatus.READY_TO_STREAM);

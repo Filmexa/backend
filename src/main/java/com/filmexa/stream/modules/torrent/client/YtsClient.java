@@ -58,6 +58,9 @@ public class YtsClient implements TorrentClient {
         }
 
         Integer id = movie.getId();
+        String releaseName = movie.getTitle_long() != null && !movie.getTitle_long().isBlank()
+                ? movie.getTitle_long()
+                : movie.getTitle();
         // map yts response to common client data
         return dataYts.stream()
             .map( torrent -> new TorrentResultDto(
@@ -71,7 +74,7 @@ public class YtsClient implements TorrentClient {
                 torrent.getQuality(),
                 torrent.getType(),
                 torrent.getVideo_codec(),
-                null
+                releaseName
             ))
             .toList();
     }
