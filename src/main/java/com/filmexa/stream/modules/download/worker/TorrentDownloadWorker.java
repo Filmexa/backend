@@ -32,9 +32,6 @@ import java.util.Optional;
 import java.util.Set;
 import com.filmexa.stream.modules.download.enums.DownloadStatus;
 import java.time.LocalDateTime;
-import bt.runtime.Config;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
 
 @Component
 @Slf4j
@@ -397,16 +394,6 @@ public class TorrentDownloadWorker {
             return MagnetUriParser.lenientParser().parse(magnetUrl).getTorrentId();
         } catch (Exception e) {
             log.warn("Could not read the info hash out of the magnet link: {}", e.getMessage());
-            return null;
-        }
-    }
-
-    private InetAddress getOutboundAddress() {
-        try (DatagramSocket socket = new DatagramSocket()) {
-            socket.connect(InetAddress.getByName("8.8.8.8"), 10002);
-            return socket.getLocalAddress();
-        } catch (Exception e) {
-            log.warn("Could not determine outbound network interface: {}", e.getMessage());
             return null;
         }
     }

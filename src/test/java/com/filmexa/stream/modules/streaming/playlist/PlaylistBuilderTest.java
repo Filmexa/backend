@@ -28,7 +28,7 @@ class PlaylistBuilderTest {
 
     @Test
     void mediaPlaylistCoversTheWholeMovieIncludingAShortFinalSegment() {
-        String playlist = builder.media(info, Resolution.P720, null);
+        String playlist = builder.media(info, null);
 
         assertThat(playlist).startsWith("#EXTM3U\n");
         assertThat(playlist).contains("#EXT-X-PLAYLIST-TYPE:VOD");
@@ -59,7 +59,7 @@ class PlaylistBuilderTest {
     @Test
     void tokenIsCarriedIntoEveryUriBecauseRelativeUrisDropTheQueryString() {
         String master = builder.master(info, Resolution.ladderFor(720), "abc.def");
-        String media = builder.media(info, Resolution.P480, "abc.def");
+        String media = builder.media(info, "abc.def");
 
         assertThat(master).contains("720/index.m3u8?token=abc.def");
         assertThat(media).contains("seg-0.ts?token=abc.def");
