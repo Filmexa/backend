@@ -6,13 +6,14 @@
 /*   By: maddou <maddou@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/26 12:52:27 by marouan           #+#    #+#             */
-/*   Updated: 2026/09/27 21:35:53 by maddou           ###   ########.fr       */
+/*   Updated: 2026/09/27 22:10:47 by maddou           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 package com.filmexa.stream.modules.moviesExternal.serviceImpl;
 
 import java.util.List;
+import java.util.Map;
 import java.util.ArrayList;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -28,8 +29,11 @@ import org.junit.jupiter.api.Test;
 import static org.mockito.Mockito.when;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.verify;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 
 import com.filmexa.stream.modules.moviesExternal.mapper.MovieMapper;
 import com.filmexa.stream.modules.moviesExternal.client.MovieProvider;
@@ -39,6 +43,7 @@ import com.filmexa.stream.modules.moviesExternal.dto.tmdb.MoviesProviderData;
 import com.filmexa.stream.modules.moviesExternal.dto.response.TrendingMoviesResponse;
 import com.filmexa.stream.modules.moviesExternal.dto.tmdb.TmdbMoviesPageableResponse;
 import com.filmexa.stream.modules.moviesExternal.dto.response.MoviePageResponse;
+import com.filmexa.stream.modules.moviesExternal.dto.response.MovieResponse;
 import com.filmexa.stream.common.exception.InvalidPaginationException;
 import com.filmexa.stream.common.exception.NotFoundException;
 
@@ -177,6 +182,41 @@ public class MovieServiceImplTest {
         assertThat( response.getMovies().get(0).getTitle() )
             .isEqualTo("Batman: Knightfall Part 1: Knightfall");
         
-            verify( movieProvider ).getTopRatedMovies( "en", 1 );
+            verify( movieProvider )
+                .getTopRatedMovies( "en", 1 );
+    }
+
+    @Test 
+    void shouldBuildHomeMovies() {
+        List< MoviesProviderData > topRated =  new ArrayList<>();
+        topRated.add( new MoviesProviderData(
+            1560520L,
+            "Batman: Knightfall Part 1: Knightfall",
+            "2026-06-23",
+            9.158,
+            "/360qdtu2hLnqMu8SVHMywn420w1.jpg",
+            false
+        ));
+        
+        List< MoviesProviderData > action =  new ArrayList<>();
+        action.add( new MoviesProviderData(
+            1L,
+            "Spider-Man: Brand New Day",
+            "2026-07-29",
+            7.864,
+            "/bjiS5ipwxb9JFy3XRRN4OAilSeX.jpg",
+            false
+        ));
+
+        when( movieProvider.getTopRatedMovies("en"))
+            .thenReturn(topRated);
+        
+        when( movieProvider.getMoviesByGenre(eq("en"), anyLong()))
+            .thenReturn(action);
+        
+        Map<String, List<MovieResponse>> homeData = movieService.buildHomeMovies("en");
+        assertEquals(6, homeData.size());
+        assertThat(homeData.get("Action").get(0).getTitle())
+            .isEqualTo("Spider-Man: Brand New Day");
     }
 }
