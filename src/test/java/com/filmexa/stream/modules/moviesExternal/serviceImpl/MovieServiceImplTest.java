@@ -6,7 +6,7 @@
 /*   By: maddou <maddou@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/26 12:52:27 by marouan           #+#    #+#             */
-/*   Updated: 2026/09/27 22:10:47 by maddou           ###   ########.fr       */
+/*   Updated: 2026/09/28 22:13:35 by maddou           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,16 +32,21 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.verify;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 
 import com.filmexa.stream.modules.moviesExternal.mapper.MovieMapper;
 import com.filmexa.stream.modules.moviesExternal.client.MovieProvider;
 import com.filmexa.stream.modules.moviesExternal.serviceImpl.MovieServiceImpl;
+import com.filmexa.stream.modules.moviesExternal.dto.tmdb.MovieDetailsProviderData;
 import com.filmexa.stream.modules.moviesExternal.dto.tmdb.MovieDetailsProviderResponse;
 import com.filmexa.stream.modules.moviesExternal.dto.tmdb.MoviesProviderData;
 import com.filmexa.stream.modules.moviesExternal.dto.response.TrendingMoviesResponse;
 import com.filmexa.stream.modules.moviesExternal.dto.tmdb.TmdbMoviesPageableResponse;
+import com.filmexa.stream.modules.moviesExternal.dto.tmdb.request.TmdbMovieDiscoverRequest;
+import com.filmexa.stream.modules.moviesExternal.enums.MovieSort;
+import com.filmexa.stream.modules.moviesExternal.dto.request.MovieSearchQuery;
 import com.filmexa.stream.modules.moviesExternal.dto.response.MoviePageResponse;
 import com.filmexa.stream.modules.moviesExternal.dto.response.MovieResponse;
 import com.filmexa.stream.common.exception.InvalidPaginationException;
@@ -218,5 +223,100 @@ public class MovieServiceImplTest {
         assertEquals(6, homeData.size());
         assertThat(homeData.get("Action").get(0).getTitle())
             .isEqualTo("Spider-Man: Brand New Day");
+    }
+
+    @Test
+    void shouldCallDiscoverMoviesWhenQueryIsNull() {
+        MovieSearchQuery query = new MovieSearchQuery(
+            "en",
+            null,
+            null,
+            2010,
+            null,
+            null
+        );
+        TmdbMovieDiscoverRequest providerParam = new TmdbMovieDiscoverRequest(
+            query.getLanguage(),
+            null,
+            query.getYear(),
+            query.getMinRating(),
+            "popularity.desc",
+            1
+        );
+        List<MoviesProviderData> movies = new ArrayList<>();
+        movies.add( new MoviesProviderData(
+            1423191L,
+            "Resident Evil",
+            "2026-09-16",
+            7.332,
+            "/i7UyjfPio0VFHB9rBUZSFyhOoM8.jpg",
+            false
+        ));
+        
+        TmdbMoviesPageableResponse responseProvider = new TmdbMoviesPageableResponse(
+            1,
+            500,
+            10000,
+            movies
+        );
+        Pageable page = PageRequest.of(0, 20);
+        when( movieProvider.discoverMovies( providerParam ))
+            .thenReturn(responseProvider);
+
+        MoviePageResponse response = movieService.searchMovie(
+            query, page
+        );
+
+        assertThat( response.getMovies() )
+            .hasSize( 1 );
+        assertThat( response.getMovies().get(0).getId() )
+            .isEqualTo(1423191L);
+        
+        verify( movieProvider ).discoverMovies( providerParam );
+    }
+
+    @Test
+    void chouldCallSearchMovieByQueryWhenQuearyNotNull( ) {
+        MovieSearchQuery query = new MovieSearchQuery(
+            "en",
+            "Inception",
+            null,
+            2010,
+            null,
+            null
+        );
+        when( movieProvider.searchMovieByQuery( 
+            "en",
+            "Inception",
+            2010,
+            1
+         ))
+            .thenReturn(List.of(
+                new MovieDetailsProviderData(
+                    27205L,
+                    "Inception",
+                    "test",
+                    "2010-07-15",
+                    "/xlaY2zyzMfkhk0HSC5VUwzoZPU1.jpg",
+                    8.374,
+                    List.of(27,878,12),
+                    false
+                )
+            ));
+        
+        MoviePageResponse response = movieService.searchMovie(
+            query, PageRequest.of(1, 20)
+        );
+
+        assertThat( response.getMovies() )
+            .isNotEmpty();
+        assertThat( response.getMovies().get(0).getTitle())
+            .isEqualTo("Inception");
+        verify( movieProvider ).searchMovieByQuery(
+            "en",
+            "Inception",
+            2010,
+            1
+        );
     }
 }
