@@ -6,7 +6,7 @@
 /*   By: maddou <maddou@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/26 12:52:27 by marouan           #+#    #+#             */
-/*   Updated: 2026/09/27 22:10:47 by maddou           ###   ########.fr       */
+/*   Updated: 2026/09/28 22:51:42 by maddou           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -37,11 +37,16 @@ import static org.mockito.ArgumentMatchers.eq;
 
 import com.filmexa.stream.modules.moviesExternal.mapper.MovieMapper;
 import com.filmexa.stream.modules.moviesExternal.client.MovieProvider;
-import com.filmexa.stream.modules.moviesExternal.serviceImpl.MovieServiceImpl;
+import com.filmexa.stream.modules.moviesExternal.dto.tmdb.CastProviderData;
+import com.filmexa.stream.modules.moviesExternal.dto.tmdb.GenreProviderData;
+import com.filmexa.stream.modules.moviesExternal.dto.tmdb.MovieCreditsProviderData;
 import com.filmexa.stream.modules.moviesExternal.dto.tmdb.MovieDetailsProviderResponse;
+import com.filmexa.stream.modules.moviesExternal.dto.tmdb.MovieProvederData;
 import com.filmexa.stream.modules.moviesExternal.dto.tmdb.MoviesProviderData;
 import com.filmexa.stream.modules.moviesExternal.dto.response.TrendingMoviesResponse;
 import com.filmexa.stream.modules.moviesExternal.dto.tmdb.TmdbMoviesPageableResponse;
+import com.filmexa.stream.modules.moviesExternal.dto.tmdb.trailer.TrailerData;
+import com.filmexa.stream.modules.moviesExternal.dto.response.MovieDetailsResponse;
 import com.filmexa.stream.modules.moviesExternal.dto.response.MoviePageResponse;
 import com.filmexa.stream.modules.moviesExternal.dto.response.MovieResponse;
 import com.filmexa.stream.common.exception.InvalidPaginationException;
@@ -218,5 +223,61 @@ public class MovieServiceImplTest {
         assertEquals(6, homeData.size());
         assertThat(homeData.get("Action").get(0).getTitle())
             .isEqualTo("Spider-Man: Brand New Day");
+    }
+    
+    
+    @Test 
+    void shouldReturnMovieById( ) {
+        MovieCreditsProviderData credits = new MovieCreditsProviderData(
+            List.of(
+                new CastProviderData(
+                    6193,
+                    "Leonardo DiCaprio",
+                    "/wo2hJpn04vbtmh0B9utCFdsQhxM.jpg",
+                    "Dom Cobb"
+                )
+            )
+        );
+        MovieProvederData inceptionMovie = new MovieProvederData(
+            8.373,
+            27205,
+            "Inception",
+            "/8ZTVqvKDQ8emSGUEMjsS4yHAwrp.jpg",
+            "/8ZTVqvKDQ8emSGUEMjsS4yHAwrp.jpg",
+            "tt1375666",
+            "en",
+            List.of( new GenreProviderData(
+                28,
+                "Action"
+                )
+            ),
+            "test",
+            "2010-07-15",
+            false,
+            credits
+        );
+
+        when( movieProvider.getMovieById("en", 27205) )
+            .thenReturn( inceptionMovie );
+        
+        when( movieProvider.getTraierMovie( 27205) )
+            .thenReturn(List.of(
+                new TrailerData(
+                    1,
+                    "Trailer",
+                    "/watch?v=cdx31ak4KbQ"
+                )
+            ));
+        
+        MovieDetailsResponse response = movieService.getMovieById( "en", 27205 );
+        
+        assertThat( response.getTitle() )
+            .isEqualTo("Inception");
+            
+        assertThat( response.getActors().get(0).getName() )
+            .isEqualTo("Leonardo DiCaprio");
+        
+        verify( movieProvider )
+            .getTraierMovie( 27205);
     }
 }
