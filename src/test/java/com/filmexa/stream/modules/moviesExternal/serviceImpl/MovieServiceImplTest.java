@@ -6,7 +6,7 @@
 /*   By: maddou <maddou@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/26 12:52:27 by marouan           #+#    #+#             */
-/*   Updated: 2026/09/28 22:57:52 by maddou           ###   ########.fr       */
+/*   Updated: 2026/09/29 12:05:18 by maddou           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,6 +18,7 @@ import java.util.ArrayList;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.data.domain.PageRequest;
 
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -54,6 +55,7 @@ import com.filmexa.stream.modules.moviesExternal.dto.tmdb.request.TmdbMovieDisco
 import com.filmexa.stream.modules.moviesExternal.dto.request.MovieSearchQuery;
 import com.filmexa.stream.modules.moviesExternal.dto.response.MoviePageResponse;
 import com.filmexa.stream.modules.moviesExternal.dto.response.MovieResponse;
+import com.filmexa.stream.common.exception.ExternalServiceException;
 import com.filmexa.stream.common.exception.InvalidPaginationException;
 import com.filmexa.stream.common.exception.NotFoundException;
 
@@ -285,6 +287,42 @@ public class MovieServiceImplTest {
             .getTraierMovie( 27205);
     }
 
+    @Test 
+    void shouldThrownNotFoundExceptionWhenRetrieveMovieById( ) {
+        when( movieProvider.getMovieById("en", 2014587) )
+            .thenThrow( new NotFoundException("Movie deos not exist") );
+        
+        
+        NotFoundException notFound = assertThrows(
+            NotFoundException.class,
+            () -> movieService.getMovieById( "en", 2014587 )
+        );
+        
+        assertThat(notFound.getMessage())
+            .isEqualTo( "Movie deos not exist" );
+        
+        verify( movieProvider )
+            .getMovieById("en",2014587);
+    }
+    
+    @Test 
+    void shouldthrowExternalServiceExceptionWhenServiceUnavailable( ) {
+        when( movieProvider.getMovieById("en", 2014587) )
+            .thenThrow( new ExternalServiceException("External service is unavailable") );
+        
+        
+        ExternalServiceException  unavailable = assertThrows(
+            ExternalServiceException.class,
+            () -> movieService.getMovieById( "en", 2014587 )
+        );
+        
+        assertThat(unavailable.getMessage())
+            .isEqualTo( "External service is unavailable" );
+        
+        verify( movieProvider )
+            .getMovieById("en",2014587);
+    }
+    
     @Test
     void shouldCallDiscoverMoviesWhenQueryIsNull() {
         MovieSearchQuery query = new MovieSearchQuery(
