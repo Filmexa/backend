@@ -69,4 +69,23 @@ class SequentialPieceSelectorTest {
         assertEquals(0, selector.seekToFraction(0.75));
         assertEquals(0, selector.getPlayheadPiece());
     }
+
+    @Test
+    void movieFractionsAreMappedInsideItsMultiFileTorrentRange() {
+        SequentialPieceSelector selector = new SequentialPieceSelector(false);
+        selector.initSelector(20);
+        selector.configureMovieRange(4, 13, true);
+
+        assertEquals(4, selector.pieceAtFraction(0));
+        assertEquals(9, selector.seekToFraction(0.5));
+        assertEquals(13, selector.pieceAtFraction(1));
+
+        BitSet availablePieces = new BitSet(20);
+        availablePieces.set(0, 20);
+        List<Integer> order = selector.getNextPieces(availablePieces, null).boxed().toList();
+
+        assertEquals(4, order.get(0));
+        assertEquals(13, order.get(1));
+        assertEquals(9, order.get(2));
+    }
 }

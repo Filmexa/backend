@@ -455,7 +455,10 @@ public class StreamServiceImpl implements StreamService {
      */
     private void requireDownloaded(Long movieId, MediaInfo info, int segmentIndex) {
         double segmentEnd = (double) (segmentIndex + 1) * properties.getSegmentSeconds();
-        double required = Math.min(segmentEnd + properties.getReadaheadSeconds(), info.durationSeconds());
+        double bufferedEnd = segmentIndex == 0
+                ? Math.max(segmentEnd, properties.getStartupBufferSeconds())
+                : segmentEnd + properties.getReadaheadSeconds();
+        double required = Math.min(bufferedEnd, info.durationSeconds());
         double segmentStart = (double) segmentIndex * properties.getSegmentSeconds();
 
         // Ask the torrent which pieces it actually holds. After a seek the data is no

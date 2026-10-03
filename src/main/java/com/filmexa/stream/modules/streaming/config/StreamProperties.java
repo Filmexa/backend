@@ -33,4 +33,7 @@ public class StreamProperties {
     private long tokenTtlMinutes = 180;
 
     private int readaheadSeconds = 15;
+
+    /** Initial media that must be present before playback is started. */
+    private int startupBufferSeconds = 10;
 }

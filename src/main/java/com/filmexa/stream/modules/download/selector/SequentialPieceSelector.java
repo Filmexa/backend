@@ -20,6 +20,11 @@ public class SequentialPieceSelector implements PieceSelector {
     private int totalPieces;
     private volatile boolean isMp4;
 
+    /** Inclusive piece range occupied by the actual movie inside a multi-file torrent. */
+    private volatile int movieFirstPiece = 0;
+    private volatile int movieLastPiece = -1;
+    private volatile boolean movieRangeConfigured;
+
     /** Where playback is, in pieces. Everything from here on is wanted first. */
     private volatile int playheadPiece = 0;
 
@@ -30,6 +35,33 @@ public class SequentialPieceSelector implements PieceSelector {
     @Override
     public void initSelector(int totalPieces) {
         this.totalPieces = totalPieces;
+        if (movieLastPiece < 0) {
+            movieLastPiece = totalPieces - 1;
+        }
+    }
+
+    /**
+     * Supplies the movie's real piece range once torrent metadata is available.
+     * Fractions used by playback must be relative to this range, not to samples,
+     * subtitles and other files that happen to share the torrent.
+     */
+    public void configureMovieRange(int firstPiece, int lastPiece, boolean mp4) {
+        if (totalPieces <= 0) {
+            return;
+        }
+        int first = Math.max(0, Math.min(firstPiece, totalPieces - 1));
+        int last = Math.max(first, Math.min(lastPiece, totalPieces - 1));
+        this.movieFirstPiece = first;
+        this.movieLastPiece = last;
+        this.isMp4 = mp4;
+        this.movieRangeConfigured = true;
+        if (playheadPiece < first || playheadPiece > last) {
+            this.playheadPiece = first;
+        }
+    }
+
+    public boolean isMovieRangeConfigured() {
+        return movieRangeConfigured;
     }
 
     /**
@@ -45,9 +77,23 @@ public class SequentialPieceSelector implements PieceSelector {
         }
 
         double clamped = Math.min(1.0, Math.max(0.0, fraction));
-        int target = Math.min(pieces - 1, (int) (clamped * pieces));
+        int first = movieFirstPiece;
+        int last = movieLastPiece >= first ? movieLastPiece : pieces - 1;
+        int moviePieces = last - first + 1;
+        int target = Math.min(last, first + (int) (clamped * moviePieces));
         this.playheadPiece = target;
         return target;
+    }
+
+    public int pieceAtFraction(double fraction) {
+        int pieces = totalPieces;
+        if (pieces <= 0) {
+            return 0;
+        }
+        double clamped = Math.min(1.0, Math.max(0.0, fraction));
+        int first = movieFirstPiece;
+        int last = movieLastPiece >= first ? movieLastPiece : pieces - 1;
+        return Math.min(last, first + (int) (clamped * (last - first + 1)));
     }
 
     public int getPlayheadPiece() {
@@ -62,13 +108,15 @@ public class SequentialPieceSelector implements PieceSelector {
 
         IntStream.Builder builder = IntStream.builder();
 
-        // The header has to come first whatever the playhead says - nothing can be
+        // The movie header has to come first whatever the playhead says - piece zero
+        // may belong to an nfo or sample in a multi-file torrent.
         // decoded, or even probed, without it.
-        if (relevantChunks.get(0)) {
-            builder.add(0);
+        int firstPiece = movieFirstPiece;
+        if (relevantChunks.get(firstPiece)) {
+            builder.add(firstPiece);
         }
 
-        int lastPiece = totalPieces - 1;
+        int lastPiece = movieLastPiece >= firstPiece ? movieLastPiece : totalPieces - 1;
         if (isMp4 && totalPieces > 1 && relevantChunks.get(lastPiece)) {
             builder.add(lastPiece);
         }
@@ -78,20 +126,20 @@ public class SequentialPieceSelector implements PieceSelector {
         // From the playhead to the end of the file...
         relevantChunks.stream()
                 .filter(i -> i >= playhead)
-                .filter(i -> shouldKeepPiece(i, lastPiece))
+                .filter(i -> shouldKeepPiece(i, firstPiece, lastPiece))
                 .forEach(builder::add);
 
         // ...then everything skipped over, so a seek does not abandon it for good.
         relevantChunks.stream()
                 .filter(i -> i < playhead)
-                .filter(i -> shouldKeepPiece(i, lastPiece))
+                .filter(i -> shouldKeepPiece(i, firstPiece, lastPiece))
                 .forEach(builder::add);
 
         return builder.build();
     }
 
-    private boolean shouldKeepPiece(int pieceIndex, int lastPiece) {
-        if (pieceIndex == 0) {
+    private boolean shouldKeepPiece(int pieceIndex, int firstPiece, int lastPiece) {
+        if (pieceIndex == firstPiece) {
             return false; 
         }
         if (isMp4 && pieceIndex == lastPiece) {
