@@ -17,6 +17,9 @@ import bt.torrent.selector.PieceSelector;
  */
 public class SequentialPieceSelector implements PieceSelector {
 
+    /** Headers/indexes regularly span several torrent pieces, not just piece zero. */
+    private static final int HEADER_WINDOW_PIECES = 16;
+
     private int totalPieces;
     private volatile boolean isMp4;
 
@@ -46,6 +49,10 @@ public class SequentialPieceSelector implements PieceSelector {
      * subtitles and other files that happen to share the torrent.
      */
     public void configureMovieRange(int firstPiece, int lastPiece, boolean mp4) {
+        configureMovieRange(firstPiece, lastPiece, mp4 ? "movie.mp4" : "movie.mkv");
+    }
+
+    public void configureMovieRange(int firstPiece, int lastPiece, String fileName) {
         if (totalPieces <= 0) {
             return;
         }
@@ -53,11 +60,22 @@ public class SequentialPieceSelector implements PieceSelector {
         int last = Math.max(first, Math.min(lastPiece, totalPieces - 1));
         this.movieFirstPiece = first;
         this.movieLastPiece = last;
-        this.isMp4 = mp4;
+        this.isMp4 = needsTailMetadata(fileName);
         this.movieRangeConfigured = true;
         if (playheadPiece < first || playheadPiece > last) {
             this.playheadPiece = first;
         }
+    }
+
+    private boolean needsTailMetadata(String fileName) {
+        if (fileName == null) {
+            return false;
+        }
+        String lower = fileName.toLowerCase(java.util.Locale.ROOT);
+        return lower.endsWith(".mp4") || lower.endsWith(".m4v")
+                || lower.endsWith(".mov") || lower.endsWith(".3gp")
+                || lower.endsWith(".3g2") || lower.endsWith(".mkv")
+                || lower.endsWith(".webm");
     }
 
     public boolean isMovieRangeConfigured() {
@@ -100,6 +118,10 @@ public class SequentialPieceSelector implements PieceSelector {
         return playheadPiece;
     }
 
+    public int getMovieFirstPiece() {
+        return movieFirstPiece;
+    }
+
     @Override
     public IntStream getNextPieces(BitSet relevantChunks, PieceStatistics pieceStatistics) {
         if (relevantChunks.isEmpty()) {
@@ -108,17 +130,25 @@ public class SequentialPieceSelector implements PieceSelector {
 
         IntStream.Builder builder = IntStream.builder();
 
-        // The movie header has to come first whatever the playhead says - piece zero
-        // may belong to an nfo or sample in a multi-file torrent.
-        // decoded, or even probed, without it.
+        // The complete header window has to come first. MKV/WebM EBML data is at the
+        // beginning; AVI and MPEG containers also need their opening structures; and an
+        // MP4 moov atom can be much larger than a single torrent piece.
         int firstPiece = movieFirstPiece;
-        if (relevantChunks.get(firstPiece)) {
-            builder.add(firstPiece);
-        }
-
         int lastPiece = movieLastPiece >= firstPiece ? movieLastPiece : totalPieces - 1;
-        if (isMp4 && totalPieces > 1 && relevantChunks.get(lastPiece)) {
-            builder.add(lastPiece);
+        int headerEnd = Math.min(lastPiece, firstPiece + HEADER_WINDOW_PIECES - 1);
+        relevantChunks.stream()
+                .filter(i -> i >= firstPiece && i <= headerEnd)
+                .forEach(builder::add);
+
+        // ISO-BMFF containers may keep their moov/index at the end; Matroska/WebM often
+        // keep seek Cues there too. Fetch a window rather than one last piece because
+        // real-world metadata regularly spans several torrent pieces.
+        int tailStart = Math.max(firstPiece, lastPiece - HEADER_WINDOW_PIECES + 1);
+        if (isMp4) {
+            relevantChunks.stream()
+                    .filter(i -> i >= tailStart && i <= lastPiece)
+                    .filter(i -> i > headerEnd)
+                    .forEach(builder::add);
         }
 
         int playhead = playheadPiece;
@@ -126,25 +156,22 @@ public class SequentialPieceSelector implements PieceSelector {
         // From the playhead to the end of the file...
         relevantChunks.stream()
                 .filter(i -> i >= playhead)
-                .filter(i -> shouldKeepPiece(i, firstPiece, lastPiece))
+                .filter(i -> shouldKeepPiece(i, firstPiece, headerEnd, tailStart, lastPiece))
                 .forEach(builder::add);
 
         // ...then everything skipped over, so a seek does not abandon it for good.
         relevantChunks.stream()
                 .filter(i -> i < playhead)
-                .filter(i -> shouldKeepPiece(i, firstPiece, lastPiece))
+                .filter(i -> shouldKeepPiece(i, firstPiece, headerEnd, tailStart, lastPiece))
                 .forEach(builder::add);
 
         return builder.build();
     }
 
-    private boolean shouldKeepPiece(int pieceIndex, int firstPiece, int lastPiece) {
-        if (pieceIndex == firstPiece) {
-            return false; 
-        }
-        if (isMp4 && pieceIndex == lastPiece) {
-            return false; 
-        }
-        return true; 
+    private boolean shouldKeepPiece(int pieceIndex, int firstPiece, int headerEnd,
+                                    int tailStart, int lastPiece) {
+        boolean inHeader = pieceIndex >= firstPiece && pieceIndex <= headerEnd;
+        boolean inTail = isMp4 && pieceIndex >= tailStart && pieceIndex <= lastPiece;
+        return !inHeader && !inTail;
     }
 }

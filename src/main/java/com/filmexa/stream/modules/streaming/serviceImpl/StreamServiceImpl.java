@@ -68,7 +68,9 @@ public class StreamServiceImpl implements StreamService {
     private static final double COMPLETE_FILE_RATIO = 0.95;
 
     private static final Set<String> VIDEO_EXTENSIONS =
-            Set.of("mp4", "mkv", "avi", "mov", "m4v", "webm", "wmv", "flv", "mpg", "mpeg", "ts");
+            Set.of("mp4", "mkv", "avi", "mov", "m4v", "webm", "wmv", "flv",
+                    "mpg", "mpeg", "ts", "m2ts", "mts", "m2v", "vob", "ogv", "ogg",
+                    "3gp", "3g2");
 
     /**
      * Subtitles are offered in English, French and Arabic only. Deriving the set from
@@ -230,13 +232,13 @@ public class StreamServiceImpl implements StreamService {
             throw new NotFoundException("Segment " + segmentIndex + " is outside movie " + movieId);
         }
 
-        // For the first segment ffmpeg is the authoritative readiness check. Mapping a
-        // timestamp to torrent pieces is only an estimate (especially for VBR MP4), and
-        // can reject a segment that the decoder can already read. A not-yet-readable
-        // source becomes a retryable 503 in Ffmpeg rather than holding the session in
-        // PREPARING indefinitely. Later segments still use the piece gate for fast seeks.
+        // ffmpeg is the authoritative readiness check. Mapping a timestamp to a byte or
+        // torrent-piece fraction is only an estimate for VBR media and is especially
+        // inaccurate for MKV clusters. Tell the torrent where playback moved, then let
+        // ffmpeg either produce the segment or return a retryable 503.
         if (segmentIndex > 0) {
-            requireDownloaded(movieId, info, segmentIndex);
+            double segmentStart = (double) segmentIndex * properties.getSegmentSeconds();
+            requestSeek(movieId, info, segmentStart);
         }
         return new Segment(movieId, info, resolution, segmentIndex, originalAudioIndex(movieId, info));
     }

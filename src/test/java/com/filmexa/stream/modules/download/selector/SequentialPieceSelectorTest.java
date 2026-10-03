@@ -25,16 +25,13 @@ class SequentialPieceSelectorTest {
         // 1. Piece 0 must be FIRST
         assertEquals(0, order.get(0));
 
-        // 2. Last piece (9) must be SECOND (for MP4 moov atom)
-        assertEquals(9, order.get(1));
-
-        // 3. Middle pieces in sequential order (1, 2, 3, 4, 5, 6, 7, 8)
-        assertEquals(List.of(0, 9, 1, 2, 3, 4, 5, 6, 7, 8), order);
+        // A small movie fits entirely in the header window, so every piece is sequential.
+        assertEquals(List.of(0, 1, 2, 3, 4, 5, 6, 7, 8, 9), order);
     }
 
     @Test
     void seekingForwardAsksForThatPartFirst_thenFillsInWhatWasSkipped() {
-        int totalPieces = 10;
+        int totalPieces = 100;
         SequentialPieceSelector selector = new SequentialPieceSelector(false);
         selector.initSelector(totalPieces);
 
@@ -42,14 +39,15 @@ class SequentialPieceSelectorTest {
         availablePieces.set(0, totalPieces);
 
         // Three quarters in: the viewer jumped towards the end of the film.
-        assertEquals(7, selector.seekToFraction(0.75));
+        assertEquals(75, selector.seekToFraction(0.75));
 
         List<Integer> order = selector.getNextPieces(availablePieces, null)
                 .boxed()
                 .toList();
 
-        // The header still comes first, then the seeked-to part, then the skipped middle.
-        assertEquals(List.of(0, 7, 8, 9, 1, 2, 3, 4, 5, 6), order);
+        assertEquals(List.of(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15),
+                order.subList(0, 16));
+        assertEquals(75, order.get(16));
     }
 
     @Test
@@ -84,8 +82,40 @@ class SequentialPieceSelectorTest {
         availablePieces.set(0, 20);
         List<Integer> order = selector.getNextPieces(availablePieces, null).boxed().toList();
 
-        assertEquals(4, order.get(0));
-        assertEquals(13, order.get(1));
-        assertEquals(9, order.get(2));
+        assertEquals(List.of(4, 5, 6, 7, 8, 9, 10, 11, 12, 13), order.subList(0, 10));
+    }
+
+    @Test
+    void largeMp4PrioritisesBothHeaderAndTailWindows() {
+        SequentialPieceSelector selector = new SequentialPieceSelector(false);
+        selector.initSelector(200);
+        selector.configureMovieRange(10, 189, "feature.MOV");
+
+        BitSet available = new BitSet(200);
+        available.set(0, 200);
+        List<Integer> order = selector.getNextPieces(available, null).boxed().toList();
+
+        assertEquals(10, order.get(0));
+        assertEquals(25, order.get(15));
+        assertEquals(174, order.get(16));
+        assertEquals(189, order.get(31));
+    }
+
+    @Test
+    void webmPrioritisesOpeningHeaderAndEndingCues() {
+        SequentialPieceSelector selector = new SequentialPieceSelector(false);
+        selector.initSelector(200);
+        selector.configureMovieRange(10, 189, "feature.webm");
+        selector.seekToFraction(0.75);
+
+        BitSet available = new BitSet(200);
+        available.set(0, 200);
+        List<Integer> order = selector.getNextPieces(available, null).boxed().toList();
+
+        assertEquals(10, order.get(0));
+        assertEquals(25, order.get(15));
+        assertEquals(174, order.get(16));
+        assertEquals(189, order.get(31));
+        assertEquals(145, order.get(32));
     }
 }

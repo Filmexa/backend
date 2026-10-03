@@ -40,6 +40,8 @@ import java.time.LocalDateTime;
 @Slf4j
 public class TorrentDownloadWorker {
 
+    private static final int STARTUP_WINDOW_PIECES = 2;
+
     /** How often we ask the DHT for peers again while a download is getting nowhere. */
     private static final long PEER_TRIGGER_INTERVAL_MS = 5_000;
 
@@ -294,15 +296,15 @@ public class TorrentDownloadWorker {
                         progress = ((double) downloaded / total) * 100.0;
                     }
 
-                    // 3. 42 Rule: Check if 10 MB buffer reached
-                    boolean streamReady = false;
-                    if (downloaded >= 25 * 1024 * 1024) {
-                        streamReady = true;
-                    }
+                    // Aggregate downloaded bytes can be scattered near the end after a
+                    // seek. Do not advertise a playable startup buffer until the opening
+                    // pieces containing the container header are actually verified.
+                    boolean streamReady = downloaded >= 25 * 1024 * 1024
+                            && isStartupWindowDownloaded(runtime, torrentId, selector);
 
                     if (streamReady && !readyToStreamMarked.get()) {
                         readyToStreamMarked.set(true);
-                        log.info("Movie {} reached 10 MB buffer! Ready to stream.", movieId);
+                        log.info("Movie {} has a verified startup buffer and is ready to stream.", movieId);
 
                         movieDownloadRepository.findByMovieId(movieId).ifPresent(download -> {
                             download.setStatus(DownloadStatus.READY_TO_STREAM);
@@ -398,6 +400,32 @@ public class TorrentDownloadWorker {
         }
     }
 
+    private boolean isStartupWindowDownloaded(BtRuntime runtime, TorrentId torrentId,
+                                              SequentialPieceSelector selector) {
+        if (torrentId == null || !selector.isMovieRangeConfigured()) {
+            return false;
+        }
+        try {
+            Optional<TorrentDescriptor> descriptor =
+                    runtime.service(TorrentRegistry.class).getDescriptor(torrentId);
+            if (descriptor.isEmpty() || descriptor.get().getDataDescriptor() == null) {
+                return false;
+            }
+            Bitfield bitfield = descriptor.get().getDataDescriptor().getBitfield();
+            int first = selector.getMovieFirstPiece();
+            int end = Math.min(bitfield.getPiecesTotal(), first + STARTUP_WINDOW_PIECES);
+            for (int piece = first; piece < end; piece++) {
+                if (!bitfield.isComplete(piece)) {
+                    return false;
+                }
+            }
+            return end > first;
+        } catch (RuntimeException e) {
+            log.debug("Could not verify startup pieces: {}", e.getMessage());
+            return false;
+        }
+    }
+
     /** The info hash bt knows the torrent by, so we can drive its peer lookups. */
     private TorrentId torrentIdOf(String magnetUrl) {
         try {
@@ -438,7 +466,7 @@ public class TorrentDownloadWorker {
             }
             if (first >= 0) {
                 String name = movie.getPathElements().get(movie.getPathElements().size() - 1);
-                selector.configureMovieRange(first, last, name.toLowerCase().endsWith(".mp4"));
+                selector.configureMovieRange(first, last, name);
                 log.info("Movie {} occupies torrent pieces {}..{} ({})", movieId, first, last, name);
                 return true;
             }
@@ -457,7 +485,7 @@ public class TorrentDownloadWorker {
         return files.stream()
                 .filter(file -> {
                     String name = file.getPathElements().get(file.getPathElements().size() - 1).toLowerCase();
-                    return name.matches(".*\\.(mp4|mkv|avi|mov|m4v|webm|wmv|flv|mpg|mpeg|ts)$");
+                    return name.matches(".*\\.(mp4|mkv|avi|mov|m4v|webm|wmv|flv|mpg|mpeg|ts|m2ts|mts|m2v|vob|ogv|ogg|3gp|3g2)$");
                 })
                 .max(java.util.Comparator.comparingLong(TorrentFile::getSize))
                 .orElse(null);
