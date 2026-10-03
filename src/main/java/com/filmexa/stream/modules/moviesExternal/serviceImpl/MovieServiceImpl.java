@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   MovieServiceImpl.java                              :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: marouan <marouan@student.42.fr>            +#+  +:+       +#+        */
+/*   By: maddou <maddou@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/14 12:33:45 by maddou            #+#    #+#             */
-/*   Updated: 2026/09/25 21:45:50 by marouan          ###   ########.fr       */
+/*   Updated: 2026/09/28 21:53:54 by maddou           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -206,7 +206,6 @@ public class MovieServiceImpl implements MovieService {
             );
             
         }
-        System.out.println(query.getGenreId()); 
         List<MovieDetailsProviderData> movies = movieProvider.searchMovieByQuery( 
                query.getLanguage(), 
                query.getQuery(), 
