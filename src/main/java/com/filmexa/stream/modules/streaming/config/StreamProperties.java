@@ -20,9 +20,13 @@ public class StreamProperties {
 
     private String ffprobePath = "ffprobe";
 
-    private String preset = "veryfast";
+    private String preset = "ultrafast";
 
-    private int maxConcurrentTranscodes = 4;
+    /** One active encoder per simultaneous viewer on the expected two-core host. */
+    private int maxConcurrentTranscodes = 2;
+
+    /** Prevent one ffmpeg process from taking every core and starving another viewer. */
+    private int encoderThreads = 1;
 
     private int transcodeTimeoutSeconds = 120;
 

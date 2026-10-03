@@ -152,6 +152,7 @@ public class Ffmpeg {
                 "-vf", "scale=-2:" + resolution.getHeight(),
                 "-c:v", "libx264",
                 "-preset", properties.getPreset(),
+                "-threads", String.valueOf(Math.max(1, properties.getEncoderThreads())),
                 "-profile:v", "high",
                 "-level", "4.1",
                 "-pix_fmt", "yuv420p",
@@ -209,8 +210,10 @@ public class Ffmpeg {
             errThread.join(5000);
 
             if (process.exitValue() != 0) {
-                throw new IllegalStateException("ffmpeg failed on segment " + segmentIndex
-                        + ": " + errors.toString().trim());
+                log.debug("ffmpeg could not read segment {} yet: {}", segmentIndex,
+                        errors.toString().trim());
+                throw new StreamNotReadyException(
+                        "Segment " + segmentIndex + " is not readable yet", 5);
             }
 
             // Asked to seek past the end of the data actually on disk, ffmpeg exits 0 and
