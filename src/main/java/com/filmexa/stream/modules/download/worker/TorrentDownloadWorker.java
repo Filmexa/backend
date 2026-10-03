@@ -9,7 +9,9 @@ import bt.Bt;
 import bt.data.Storage;
 import bt.data.file.FileSystemStorage;
 import bt.data.Bitfield;
+import bt.data.DataDescriptor;
 import bt.magnet.MagnetUriParser;
+import bt.metainfo.TorrentFile;
 import bt.metainfo.TorrentId;
 import bt.runtime.BtRuntime;
 import bt.torrent.TorrentDescriptor;
@@ -30,6 +32,7 @@ import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.HashSet;
 import com.filmexa.stream.modules.download.enums.DownloadStatus;
 import java.time.LocalDateTime;
 
@@ -136,8 +139,13 @@ public class TorrentDownloadWorker {
                 return Optional.empty();
             }
 
-            int first = pieceAt(fromFraction, total);
-            int last = pieceAt(toFraction, total);
+            SequentialPieceSelector selector = selectors.get(movieId);
+            if (selector == null) {
+                return Optional.empty();
+            }
+            configureMovieRange(movieId, selector, runtime, torrentId);
+            int first = selector.pieceAtFraction(fromFraction);
+            int last = selector.pieceAtFraction(toFraction);
             for (int piece = first; piece <= last; piece++) {
                 if (!bitfield.isComplete(piece)) {
                     return Optional.of(false);
@@ -148,11 +156,6 @@ public class TorrentDownloadWorker {
             log.debug("Could not read the piece bitfield for movie {}: {}", movieId, e.getMessage());
             return Optional.empty();
         }
-    }
-
-    private int pieceAt(double fraction, int totalPieces) {
-        double clamped = Math.min(1.0, Math.max(0.0, fraction));
-        return Math.min(totalPieces - 1, (int) (clamped * totalPieces));
     }
 
     public void stopDownload(Long movieId) {
@@ -210,11 +213,12 @@ public class TorrentDownloadWorker {
             // --- STEP 1: Directory & Format Detection ---
             Path movieDir = Paths.get(videoStoragePath, String.valueOf(movieId));
             Files.createDirectories(movieDir);
-            boolean isMp4 = magnetUrl.toLowerCase().contains(".mp4");
             
             // --- STEP 2: Configure & Build BtClient ---
             Storage storage = new FileSystemStorage(movieDir);
-            SequentialPieceSelector selector = new SequentialPieceSelector(isMp4);
+            // The magnet name is not reliable enough to identify the container. The
+            // actual movie and its piece range are selected when metadata arrives.
+            SequentialPieceSelector selector = new SequentialPieceSelector(false);
             selectors.put(movieId, selector);
             BtClient client = Bt.client(lease.runtime())
                 .storage(storage)
@@ -248,8 +252,14 @@ public class TorrentDownloadWorker {
                 }
                 AtomicLong lastPeerTrigger = new AtomicLong(0);
                 AtomicLong lastProgressPersist = new AtomicLong(System.currentTimeMillis());
+                AtomicBoolean movieRangeConfigured = new AtomicBoolean(false);
+                BtRuntime runtime = lease.runtime();
 
                 CompletableFuture<?> future = client.startAsync(sessionState -> {
+                    if (!movieRangeConfigured.get()
+                            && configureMovieRange(movieId, selector, runtime, torrentId)) {
+                        movieRangeConfigured.set(true);
+                    }
                     Long downloaded = sessionState.getDownloaded();
                     Long left = sessionState.getLeft();
                     // A negative "left" means the metadata has not been fetched yet, so
@@ -396,5 +406,60 @@ public class TorrentDownloadWorker {
             log.warn("Could not read the info hash out of the magnet link: {}", e.getMessage());
             return null;
         }
+    }
+
+    private boolean configureMovieRange(Long movieId, SequentialPieceSelector selector,
+                                        BtRuntime runtime, TorrentId torrentId) {
+        if (selector.isMovieRangeConfigured()) {
+            return true;
+        }
+        if (torrentId == null) {
+            return false;
+        }
+        try {
+            Optional<TorrentDescriptor> descriptor =
+                    runtime.service(TorrentRegistry.class).getDescriptor(torrentId);
+            if (descriptor.isEmpty() || descriptor.get().getDataDescriptor() == null) {
+                return false;
+            }
+            DataDescriptor data = descriptor.get().getDataDescriptor();
+            TorrentFile movie = largestVideoFile(data);
+            if (movie == null) {
+                return false;
+            }
+            int first = -1;
+            int last = -1;
+            int total = data.getBitfield().getPiecesTotal();
+            for (int piece = 0; piece < total; piece++) {
+                if (data.getFilesForPiece(piece).contains(movie)) {
+                    if (first < 0) first = piece;
+                    last = piece;
+                }
+            }
+            if (first >= 0) {
+                String name = movie.getPathElements().get(movie.getPathElements().size() - 1);
+                selector.configureMovieRange(first, last, name.toLowerCase().endsWith(".mp4"));
+                log.info("Movie {} occupies torrent pieces {}..{} ({})", movieId, first, last, name);
+                return true;
+            }
+        } catch (Exception e) {
+            log.debug("Could not map movie {} to its torrent pieces: {}", movieId, e.getMessage());
+        }
+        return false;
+    }
+
+    @SuppressWarnings("deprecation")
+    private TorrentFile largestVideoFile(DataDescriptor data) {
+        Set<TorrentFile> files = new HashSet<>();
+        for (int piece = 0; piece < data.getBitfield().getPiecesTotal(); piece++) {
+            files.addAll(data.getFilesForPiece(piece));
+        }
+        return files.stream()
+                .filter(file -> {
+                    String name = file.getPathElements().get(file.getPathElements().size() - 1).toLowerCase();
+                    return name.matches(".*\\.(mp4|mkv|avi|mov|m4v|webm|wmv|flv|mpg|mpeg|ts)$");
+                })
+                .max(java.util.Comparator.comparingLong(TorrentFile::getSize))
+                .orElse(null);
     }
 }
