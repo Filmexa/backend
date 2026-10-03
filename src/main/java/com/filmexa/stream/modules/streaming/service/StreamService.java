@@ -32,6 +32,6 @@ public interface StreamService {
      * @param audioTrackIndex which of the file's audio streams to encode - the original
      *                        language, resolved once when the session is prepared
      */
-    record Segment(MediaInfo info, Resolution resolution, int index, int audioTrackIndex) {
+    record Segment(Long movieId, MediaInfo info, Resolution resolution, int index, int audioTrackIndex) {
     }
 }

@@ -16,6 +16,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -92,6 +94,10 @@ public class StreamServiceImpl implements StreamService {
 
     private final Map<Long, MediaInfo> probes = new ConcurrentHashMap<>();
 
+    /** One in-flight encoder per segment, shared by every browser/session. */
+    private final Map<SegmentCacheKey, CompletableFuture<byte[]>> segmentEncodes =
+            new ConcurrentHashMap<>();
+
     /** TMDB's original_language per movie. One lookup per movie, then served from memory. */
     private final Map<Long, String> originalLanguages = new ConcurrentHashMap<>();
 
@@ -102,9 +108,6 @@ public class StreamServiceImpl implements StreamService {
         MediaInfo info;
         try {
             info = mediaInfo(movieId);
-            // READY has to mean "the player will actually get its first segment", not just
-            // "the download flipped a flag" - so check the real gate the segments use.
-            requireDownloaded(movieId, info, 0);
         } catch (StreamNotReadyException | NotFoundException notReadyYet) {
             log.debug("Movie {} not playable yet: {}", movieId, notReadyYet.getMessage());
             return preparing(movieId, download);
@@ -227,14 +230,114 @@ public class StreamServiceImpl implements StreamService {
             throw new NotFoundException("Segment " + segmentIndex + " is outside movie " + movieId);
         }
 
-        requireDownloaded(movieId, info, segmentIndex);
-        return new Segment(info, resolution, segmentIndex, originalAudioIndex(movieId, info));
+        // For the first segment ffmpeg is the authoritative readiness check. Mapping a
+        // timestamp to torrent pieces is only an estimate (especially for VBR MP4), and
+        // can reject a segment that the decoder can already read. A not-yet-readable
+        // source becomes a retryable 503 in Ffmpeg rather than holding the session in
+        // PREPARING indefinitely. Later segments still use the piece gate for fast seeks.
+        if (segmentIndex > 0) {
+            requireDownloaded(movieId, info, segmentIndex);
+        }
+        return new Segment(movieId, info, resolution, segmentIndex, originalAudioIndex(movieId, info));
     }
 
     @Override
     public byte[] segmentBytes(Segment segment) {
-        return ffmpeg.encodeSegment(segment.info(), segment.resolution(), segment.index(),
-                segment.audioTrackIndex());
+        Path cached = segmentCacheFile(segment);
+        byte[] existing = readCachedSegment(cached);
+        if (existing != null) {
+            return existing;
+        }
+
+        SegmentCacheKey key = new SegmentCacheKey(segment.movieId(),
+                segment.resolution().getHeight(), segment.index(), segment.audioTrackIndex());
+        CompletableFuture<byte[]> mine = new CompletableFuture<>();
+        CompletableFuture<byte[]> running = segmentEncodes.putIfAbsent(key, mine);
+
+        if (running != null) {
+            try {
+                return running.join();
+            } catch (CompletionException failure) {
+                throw rethrow(failure.getCause());
+            }
+        }
+
+        try {
+            // Check again after winning the single-flight slot: a previous encoder may
+            // have completed between the first disk read and putIfAbsent.
+            existing = readCachedSegment(cached);
+            if (existing != null) {
+                mine.complete(existing);
+                return existing;
+            }
+
+            byte[] encoded = ffmpeg.encodeSegment(segment.info(), segment.resolution(),
+                    segment.index(), segment.audioTrackIndex());
+            writeCachedSegment(cached, encoded);
+            mine.complete(encoded);
+            return encoded;
+        } catch (RuntimeException failure) {
+            mine.completeExceptionally(failure);
+            throw failure;
+        } finally {
+            segmentEncodes.remove(key, mine);
+        }
+    }
+
+    private Path segmentCacheFile(Segment segment) {
+        return Paths.get(videoStoragePath, segment.movieId().toString(), "hls",
+                segment.resolution().getHeight() + "p-a" + segment.audioTrackIndex(),
+                "seg-" + segment.index() + ".ts").toAbsolutePath();
+    }
+
+    private byte[] readCachedSegment(Path cached) {
+        if (!Files.isRegularFile(cached)) {
+            return null;
+        }
+        try {
+            byte[] bytes = Files.readAllBytes(cached);
+            return bytes.length == 0 ? null : bytes;
+        } catch (IOException e) {
+            log.warn("Could not read cached HLS segment {}: {}", cached, e.getMessage());
+            return null;
+        }
+    }
+
+    private void writeCachedSegment(Path destination, byte[] bytes) {
+        Path temporary = null;
+        try {
+            Files.createDirectories(destination.getParent());
+            temporary = Files.createTempFile(destination.getParent(), "seg-", ".ts.part");
+            Files.write(temporary, bytes);
+            try {
+                Files.move(temporary, destination, StandardCopyOption.REPLACE_EXISTING,
+                        StandardCopyOption.ATOMIC_MOVE);
+            } catch (java.nio.file.AtomicMoveNotSupportedException unsupported) {
+                Files.move(temporary, destination, StandardCopyOption.REPLACE_EXISTING);
+            }
+            temporary = null;
+        } catch (IOException e) {
+            // Caching is an optimisation. The encoded response is still valid, so a
+            // read-only/full cache directory must not break playback.
+            log.warn("Could not cache HLS segment {}: {}", destination, e.getMessage());
+        } finally {
+            if (temporary != null) {
+                try {
+                    Files.deleteIfExists(temporary);
+                } catch (IOException ignored) {
+                    log.debug("Could not remove temporary HLS segment {}", temporary);
+                }
+            }
+        }
+    }
+
+    private RuntimeException rethrow(Throwable failure) {
+        return failure instanceof RuntimeException runtime
+                ? runtime
+                : new IllegalStateException("Concurrent segment encoding failed", failure);
+    }
+
+    private record SegmentCacheKey(Long movieId, int height, int segmentIndex, int audioTrackIndex) {
     }
 
     @Override
