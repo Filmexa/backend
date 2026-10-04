@@ -21,9 +21,11 @@ services:
     env_file:
       - ./.env
     volumes:
-      # Downloaded movies + the transcoded HLS cache must survive container
-      # restarts, otherwise every redeploy re-downloads and re-encodes.
+      # Application storage must survive container recreation and redeployment.
       - movie_data:/data/movies
+    ports:
+      - "6891-6896:6891-6896/tcp"
+      - "49001-49006:49001-49006/udp"
     depends_on:
       - postgres
     networks:
