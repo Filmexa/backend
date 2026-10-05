@@ -144,7 +144,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           tags: |
             ${{ secrets.DOCKERUSER }}/filmexa-backend:latest
-            ${{ secrets.DOCKERUSER }}/filmexa-backend:${{ github.actor }}-${{ github.sha }}
+            ${{ secrets.DOCKERUSER }}/filmexa-backend:${{ github.sha }}
 
   deploy-code:
     name: deploy to server
@@ -157,13 +157,21 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Prepare deployment directory
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.ORACLE_INSTANCE_HOST }}
+          username: ${{ secrets.ORACLE_INSTANCE_USER }}
+          key: ${{ secrets.ORACLE_INSTANCE_KEY }}
+          script: mkdir -p "$HOME/backend"
+
       - name: Copy docker-compose.yml to server
         run: |
           echo "${{ secrets.ORACLE_INSTANCE_KEY }}" > ssh_key.pem
           chmod 600 ssh_key.pem
 
           scp -o StrictHostKeyChecking=no -i ssh_key.pem \
-            docker-compose.yml ${{ secrets.ORACLE_INSTANCE_USER }}@${{ secrets.ORACLE_INSTANCE_HOST }}:/home/${{ secrets.ORACLE_INSTANCE_USER }}/backend
+            docker-compose.yml ${{ secrets.ORACLE_INSTANCE_USER }}@${{ secrets.ORACLE_INSTANCE_HOST }}:/home/${{ secrets.ORACLE_INSTANCE_USER }}/backend/
           
           rm ssh_key.pem
 
@@ -175,7 +183,8 @@ jobs:
           key: ${{ secrets.ORACLE_INSTANCE_KEY }}
           
           script: |
-            cd /home/ubuntu/backend
+            set -eu
+            cd "$HOME/backend"
             
             cat << 'EOF' > .env
             SPRING_DATASOURCE_URL=${{ secrets.SPRING_DATASOURCE_URL }}
@@ -251,4 +260,26 @@ jobs:
             docker network inspect filmexa-net >/dev/null 2>&1 || docker network create filmexa-net
             docker compose pull
             docker compose up -d --remove-orphans
+
+            application_ready=false
+            for attempt in $(seq 1 45); do
+              status=$(docker inspect -f '{{.State.Status}}' filmexa-backend 2>/dev/null || true)
+              if [ "$status" = "running" ] && \
+                 docker logs filmexa-backend 2>&1 | grep -q 'Started ServletInitializer'; then
+                application_ready=true
+                break
+              fi
+              sleep 2
+            done
+
+            if [ "$application_ready" != "true" ]; then
+              docker compose ps
+              docker compose logs --tail=200 backend
+              exit 1
+            fi
+
+            docker exec filmexa-backend printenv \
+              VIDEO_STORAGE_PATH IMG_STORAGE_PATH SUBTITLE_STORAGE_PATH JAVA_TOOL_OPTIONS
+            docker image inspect "mbaanni/filmexa-backend:${{ github.sha }}" \
+              --format 'Deployed image: {{.Id}} {{.Architecture}}'
             docker image prune -f
