@@ -127,7 +127,7 @@ jobs:
       - name: Log in to Docker Hub
         uses: docker/login-action@v4
         with:
-          username: ${{ secrets.DOCKERUSER }}
+          username: mbaanni
           password: ${{ secrets.DOCKERPASSWORD }}
       
       - name: Set up QEMU
@@ -143,8 +143,8 @@ jobs:
           push: true
           platforms: linux/amd64,linux/arm64
           tags: |
-            ${{ secrets.DOCKERUSER }}/filmexa-backend:latest
-            ${{ secrets.DOCKERUSER }}/filmexa-backend:${{ github.sha }}
+            mbaanni/filmexa-backend:latest
+            mbaanni/filmexa-backend:${{ github.sha }}
 
   deploy-code:
     name: deploy to server
@@ -216,9 +216,10 @@ jobs:
             MAIL_USERNAME=${{ secrets.MAIL_USERNAME }}
             MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }}
             CORS_ALLOWED_ORIGINS=${{ secrets.CORS_ALLOWED_ORIGINS }}
-            IMG_STORAGE_PATH=${{ secrets.IMG_STORAGE_PATH }}
-            VIDEO_STORAGE_PATH=${{ secrets.VIDEO_STORAGE_PATH }}
-            SUBTITLE_STORAGE_PATH=${{ secrets.SUBTITLE_STORAGE_PATH }}
+            IMG_STORAGE_PATH=/data/images
+            VIDEO_STORAGE_PATH=/data/movies
+            SUBTITLE_STORAGE_PATH=/data/subtitles
+            IMAGE_TAG=${{ github.sha }}
             POSTGRES_DB=${{ secrets.POSTGRES_DB }}
             POSTGRES_USER=${{ secrets.POSTGRES_USER }}
             POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
@@ -258,8 +259,10 @@ jobs:
             chmod 600 .env
 
             docker network inspect filmexa-net >/dev/null 2>&1 || docker network create filmexa-net
-            docker compose pull
-            docker compose up -d --remove-orphans
+            export IMAGE_TAG='${{ github.sha }}'
+
+            docker compose pull backend
+            docker compose up -d --remove-orphans backend
 
             application_ready=false
             for attempt in $(seq 1 45); do
@@ -280,6 +283,7 @@ jobs:
 
             docker exec filmexa-backend printenv \
               VIDEO_STORAGE_PATH IMG_STORAGE_PATH SUBTITLE_STORAGE_PATH JAVA_TOOL_OPTIONS
-            docker image inspect "mbaanni/filmexa-backend:${{ github.sha }}" \
+            image="mbaanni/filmexa-backend:${IMAGE_TAG}"
+            docker image inspect "$image" \
               --format 'Deployed image: {{.Id}} {{.Architecture}}'
             docker image prune -f

@@ -14,7 +14,7 @@ services:
       - shared-network
   
   backend:
-    image: mbaanni/filmexa-backend:${BACKEND_TAG:-latest}
+    image: mbaanni/filmexa-backend:${IMAGE_TAG:-latest}
     container_name: filmexa-backend
     restart: always
 
