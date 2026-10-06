@@ -1,0 +1,15 @@
+FROM eclipse-temurin:17-jdk-jammy
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY .mvn .mvn
+COPY mvnw pom.xml ./
+RUN chmod +x mvnw && ./mvnw dependency:go-offline
+
+EXPOSE 8080 6891-6896 49001-49006/udp
+
+CMD ["./mvnw", "spring-boot:run"]
