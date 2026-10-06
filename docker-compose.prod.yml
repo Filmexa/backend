@@ -1,0 +1,42 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: filmexa-postgres
+    restart: always
+    env_file:
+      - ./.env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - shared-network
+
+  backend:
+    image: mbaanni/filmexa-backend:${IMAGE_TAG:-latest}
+    container_name: filmexa-backend
+    restart: always
+    env_file:
+      - ./.env
+    environment:
+      JAVA_TOOL_OPTIONS: -Djava.net.preferIPv4Stack=true
+    volumes:
+      - movie_data:/data/movies
+      - image_data:/data/images
+      - subtitle_data:/data/subtitles
+    ports:
+      - "6891-6896:6891-6896/tcp"
+      - "49001-49006:49001-49006/udp"
+    depends_on:
+      - postgres
+    networks:
+      - shared-network
+
+volumes:
+  postgres_data:
+  movie_data:
+  image_data:
+  subtitle_data:
+
+networks:
+  shared-network:
+    external: true
+    name: filmexa-net
